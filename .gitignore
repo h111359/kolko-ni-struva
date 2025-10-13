@@ -1,0 +1,37 @@
+# .gitignore for kolko-ni-struva
+# Ignore everything except essential project files
+
+# Ignore all files
+*
+
+# But keep these files (unignore)
+!README.md
+!index.html
+!script.js
+!style.css
+!requirements.txt
+!category-nomenclature.json
+!cities-ekatte-nomenclature.json
+!trade-chains-nomenclature.json
+!update-kolko-ni-struva.py
+!update.sh
+!DEPLOYMENT.md
+!task-prompts.md
+!.gitignore
+
+downloads/
+helper-scripts/
+scraper_venv/
+test_downloads/
+
+# Ignore all contents of downloads, helper-scripts, test_downloads, and scraper_venv
+/downloads/*
+/helper-scripts/*
+/test_downloads/*
+/scraper_venv/*
+
+# But keep .gitignore in those folders if present
+!/downloads/.gitignore
+!/helper-scripts/.gitignore
+!/test_downloads/.gitignore
+!/scraper_venv/.gitignore
