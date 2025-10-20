@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор на Цени - Колко Струва</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>📊 Анализатор на Цени</h1>
+        <p class="subtitle">Визуализация на данни от kolkostruva.bg</p>
+        <div class="data-date-selector">
+            <label for="date-selector">Дата на данните:</label>
+            <select id="date-selector" class="date-select"></select>
+        </div>
+        
+        <nav class="main-nav">
+            <button class="nav-btn active" data-page="home">🏠 Начало</button>
+            <button class="nav-btn" data-page="report1">📈 Цени по категория</button>
+            <button class="nav-btn" data-page="report2">📋 Продукти</button>
+            <button class="nav-btn" data-page="report3">🗺️ Сравнение по места</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Landing Page -->
+        <section class="page-section active" id="home">
+            <div class="landing-page">
+                <div class="landing-content">
+                    <h2>Добре дошли в Анализатора на Цени</h2>
+                    <p class="intro-text">
+                        Този инструмент ви помага да анализирате и сравнявате цените на хранителни продукти 
+                        в различни търговски вериги и градове из България, използвайки отворените данни от 
+                        <a href="https://kolkostruva.bg/" target="_blank">kolkostruva.bg</a>.
+                    </p>
+                    
+                    <div class="features">
+                        <div class="feature-card">
+                            <div class="feature-icon">📈</div>
+                            <h3>Цени по категория</h3>
+                            <p>Вижте средната цена на различните категории продукти във вашия град. Сравнете цените между категориите с интерактивна графика.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">📋</div>
+                            <h3>Търсене на продукти</h3>
+                            <p>Намерете конкретни продукти по град и категория. Открийте най-изгодните оферти и промоции.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🗺️</div>
+                            <h3>Сравнение по места</h3>
+                            <p>Сравнете цените на една категория продукти в различни градове. Вижте къде се предлагат най-добрите цени.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="cta-section">
+                        <p class="cta-text">Изберете отчет от менюто горе, за да започнете анализ на цените</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </section>
+
+        <!-- Report 1: Category prices by city -->
+        <section class="page-section" id="report1">
+            <div class="report-section">
+                <h2>📈 Отчет 1: Средна цена по категория за населено място</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="city-r1">Населено място:</label>
+                        <select id="city-r1" class="select-control"></select>
+                    </div>
+                </div>
+                <div id="chart-r1" class="chart-container"></div>
+            </div>
+        </section>
+
+        <!-- Report 2: Products by city and category -->
+        <section class="page-section" id="report2">
+            <div class="report-section">
+                <h2>📋 Отчет 2: Продукти по населено място и категория</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="city-r2">Населено място:</label>
+                        <select id="city-r2" class="select-control"></select>
+                    </div>
+                    <div class="control-group">
+                        <label for="category-r2">Категория:</label>
+                        <select id="category-r2" class="select-control"></select>
+                    </div>
+                </div>
+                <div id="results-r2" class="results-container"></div>
+            </div>
+        </section>
+
+        <!-- Report 3: Locations by category -->
+        <section class="page-section" id="report3">
+            <div class="report-section">
+                <h2>🗺️ Отчет 3: Населени места и продукти по категория</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="category-r3">Категория:</label>
+                        <select id="category-r3" class="select-control"></select>
+                    </div>
+                </div>
+                <div id="results-r3" class="results-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Данни от <a href="https://kolkostruva.bg/" target="_blank">kolkostruva.bg</a></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
