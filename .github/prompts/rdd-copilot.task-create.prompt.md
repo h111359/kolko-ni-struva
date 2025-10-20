@@ -14,11 +14,9 @@ R01: Do NOT include implementation or technical details in the requirements sect
 
 R02: Always use the script `.github/scripts/task.py` for task creation.
 
-R03: The initial Task state must be `draft`.
+R03: Requirements must be expressed from the requestor perspective (problem, motivation, business value, constraints) before clarification loop begins.
 
-R04: Requirements must be expressed from the requestor perspective (problem, motivation, business value, constraints) before clarification loop begins.
-
-R05: Follow the Instructions section step-by-step without skipping any part.
+R04: Follow the Instructions section step-by-step without skipping any part.
 
 # Steps:
 
@@ -30,8 +28,8 @@ S01: Display the following banner to the user:
  Description: 
  > Create a new Task capturing only 
  > business / functional requirements (problem, value,
- > constraints, acceptance criteria) and initialize draft
- > file using timestamped naming.
+ > constraints, acceptance criteria) and initialize 
+ > a file using timestamped naming.
 
  User Action: 
  > Provide short task name & initial requirement details;
@@ -48,7 +46,7 @@ S05: Check if the current folder is a git repository. If not, initialize a git r
 
 S06: Get the current local time using `.github/scripts/get-local-time.py` and store it for use in the task filename timestamp.
 
-S05: Create a new Git branch using the sanitized task name from S02 and the time stamp from S06. The name of the branch should be `task/<task-name>-<timestamp>`. Use `git checkout -b task/<task-name>-<timestamp>` where `<task-name>` is the sanitized name and `<timestamp>` is the local time found in S06. This ensures task work is isolated on a dedicated branch.
+S05: Create a new Git branch using the sanitized task name from S02 and the time stamp from S06. The name of the branch should be `task/<timestamp>-<task-name>`. Use `git checkout -b task/<timestamp>-<task-name>` where `<task-name>` is the sanitized name and `<timestamp>` is the local time found in S06. This ensures task work is isolated on a dedicated branch.
 
 S05: Use `.github/scripts/task.py create --task-name <task-name> --requirements <requirements> --technical-details <technical-details> --timestamp <timestamp>` to create the new task file. Populate:
    - `<task-name>`: sanitized name from S02
