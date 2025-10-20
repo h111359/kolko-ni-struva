@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 DOWNLOADS_DIR = "downloads"
-OUTPUT_FILE = "build/data.csv"
+OUTPUT_FILE = "web-deploy/data.csv"
 BASE_URL = "https://kolkostruva.bg/opendata"
-CONFIG_FILE = "build/trade-chains-nomenclature.json"
-DEPLOY_DIR = "build"
+CONFIG_FILE = "web-deploy/trade-chains-nomenclature.json"
+DEPLOY_DIR = "web-deploy"
 NETLIFY_SITE_ID = "b2c0c6b5-58f2-4620-892b-0f5a4d9513f2"
 NETLIFY_TOKEN_ENV = "NETLIFY_AUTH_TOKEN"  # Environment variable name
 FILES_TO_DEPLOY = [
@@ -245,8 +245,8 @@ class KolkoNiStruvaUpdater:
     def deploy_to_folder(self):
         """
         Deploy website files to kolko-ni-struva folder
-        Clears the folder first, then copies all necessary files from build/.
-        Also copies index.html, script.js, and style.css from src/ to build/ after clearing.
+        Clears the folder first, then copies all necessary files from web-deploy/.
+        Also copies index.html, script.js, and style.css from src/ to web-deploy/ after clearing.
         """
         logger.info(f"Deploying files to {DEPLOY_DIR} folder...")
         try:
@@ -257,8 +257,7 @@ class KolkoNiStruvaUpdater:
             os.makedirs(DEPLOY_DIR, exist_ok=True)
             logger.info(f"Created {DEPLOY_DIR} folder")
 
-
-            # Copy index.html, script.js, and style.css from src/ to build/
+            # Copy index.html, script.js, and style.css from src/ to web-deploy/
             static_files = ["index.html", "script.js", "style.css"]
             for fname in static_files:
                 src_path = os.path.join("src", fname)
@@ -266,11 +265,11 @@ class KolkoNiStruvaUpdater:
                 if os.path.exists(src_path):
                     shutil.copy2(src_path, dst_path)
                     file_size = os.path.getsize(src_path)
-                    logger.info(f"Copied {fname} from src/ to build/ ({file_size:,} bytes)")
+                    logger.info(f"Copied {fname} from src/ to web-deploy/ ({file_size:,} bytes)")
                 else:
                     logger.warning(f"File {fname} not found in src/, skipping...")
 
-            # Copy nomenclature files from data/ to build/
+            # Copy nomenclature files from data/ to web-deploy/
             nomenclature_files = [
                 "category-nomenclature.json",
                 "cities-ekatte-nomenclature.json",
@@ -282,7 +281,7 @@ class KolkoNiStruvaUpdater:
                 if os.path.exists(src_path):
                     shutil.copy2(src_path, dst_path)
                     file_size = os.path.getsize(src_path)
-                    logger.info(f"Copied {fname} from data/ to build/ ({file_size:,} bytes)")
+                    logger.info(f"Copied {fname} from data/ to web-deploy/ ({file_size:,} bytes)")
                 else:
                     logger.warning(f"File {fname} not found in data/, skipping...")
 
