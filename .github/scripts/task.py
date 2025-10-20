@@ -55,7 +55,24 @@ def add_implementation_log_entry(task_id, log_entry):
 def print_usage():
     print("Usage:")
     print("  task.py create --time YYYYMMDD-HHmm --task-name NAME --requirements REQ --technical-details DETAILS")
+    print("  task.py plan --timestamp YYYYMMDD-HHmm --task-name NAME --planning-details DETAILS")
     print("  task.py log --task-id ID --log-entry ENTRY")
+def add_planning_details_to_task(timestamp, task_name, planning_details):
+    task_id = f"t-{timestamp}"
+    task_file = os.path.join(TASKS_DIR, f"{task_id}.task.md")
+    if not os.path.exists(task_file):
+        print(f"Task file not found: {task_file}")
+        sys.exit(1)
+    with open(task_file, "r", encoding="utf-8") as f:
+        content = f.read()
+    if "<planning-details>" in content:
+        content = content.replace("<planning-details>", planning_details, 1)
+    else:
+        print("<planning-details> placeholder not found in task file.")
+        sys.exit(1)
+    with open(task_file, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"Planning details added to: {task_file}")
 
 
 def main():
@@ -85,6 +102,25 @@ def main():
         requirements = args[rq_idx + 1]
         technical_details = args[td_idx + 1]
         create_standalone_task_with_time(task_id, task_name, requirements, technical_details)
+    elif mode == "plan":
+        args = sys.argv[2:]
+        try:
+            ts_idx = args.index("--timestamp")
+            tn_idx = args.index("--task-name")
+            pd_idx = args.index("--planning-details")
+        except ValueError:
+            print_usage()
+            sys.exit(1)
+        timestamp = args[ts_idx + 1]
+        # Validate timestamp format
+        try:
+            datetime.strptime(timestamp, "%Y%m%d-%H%M")
+        except ValueError:
+            print("Invalid timestamp format. Use YYYYMMDD-HHmm.")
+            sys.exit(1)
+        task_name = args[tn_idx + 1]
+        planning_details = args[pd_idx + 1]
+        add_planning_details_to_task(timestamp, task_name, planning_details)
     elif mode == "log":
         args = sys.argv[2:]
         try:

@@ -622,3 +622,15 @@ create a script in .github/scripts which takes the current system time in format
 
 ---
 change #file:task.py in create mode to take the time in format YYYYMMDD-HHmm as a parameter on top of the other parameters (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Follow instructions in [rdd-copilot.task-create.prompt.md](file:///home/hromar/Desktop/vscode/kolko-ni-struva/.github/prompts/rdd-copilot.task-create.prompt.md).
+
+---
+Fulfill #file:rdd-copilot.task-plan.prompt.md taking as an example #file:rdd-copilot.task-create.prompt.md  (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Read the #file:rdd-copilot.task-plan.prompt.md. It requires a new functionality in #file:task.py. Apply this functionality (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Follow instructions in [rdd-copilot.task-plan.prompt.md](file:///home/hromar/Desktop/vscode/kolko-ni-struva/.github/prompts/rdd-copilot.task-plan.prompt.md). (See <attachments> above for file contents. You may not need to search or read the file again.)
