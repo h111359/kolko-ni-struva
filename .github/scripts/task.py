@@ -9,13 +9,17 @@ TASKS_DIR = ".rdd-docs/tasks"
 
 
 def generate_task_id():
+    # This function is now unused, but kept for backward compatibility
     return "t-" + datetime.now().strftime("%Y%m%d-%H%M")
 
 
 def create_standalone_task(task_name, requirements, technical_details):
+    # This function is now updated to require task_id as parameter
+    raise NotImplementedError("Use create_standalone_task_with_time instead.")
+
+def create_standalone_task_with_time(task_id, task_name, requirements, technical_details):
     if not os.path.exists(TASKS_DIR):
         os.makedirs(TASKS_DIR)
-    task_id = generate_task_id()
     target_file = os.path.join(TASKS_DIR, f"{task_id}.task.md")
     with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
         content = f.read()
@@ -50,7 +54,7 @@ def add_implementation_log_entry(task_id, log_entry):
 
 def print_usage():
     print("Usage:")
-    print("  task.py create --task-name NAME --requirements REQ --technical-details DETAILS")
+    print("  task.py create --time YYYYMMDD-HHmm --task-name NAME --requirements REQ --technical-details DETAILS")
     print("  task.py log --task-id ID --log-entry ENTRY")
 
 
@@ -62,16 +66,25 @@ def main():
     if mode == "create":
         args = sys.argv[2:]
         try:
+            time_idx = args.index("--time")
             tn_idx = args.index("--task-name")
             rq_idx = args.index("--requirements")
             td_idx = args.index("--technical-details")
         except ValueError:
             print_usage()
             sys.exit(1)
+        time_str = args[time_idx + 1]
+        # Validate time format
+        try:
+            datetime.strptime(time_str, "%Y%m%d-%H%M")
+        except ValueError:
+            print("Invalid time format. Use YYYYMMDD-HHmm.")
+            sys.exit(1)
+        task_id = f"t-{time_str}"
         task_name = args[tn_idx + 1]
         requirements = args[rq_idx + 1]
         technical_details = args[td_idx + 1]
-        create_standalone_task(task_name, requirements, technical_details)
+        create_standalone_task_with_time(task_id, task_name, requirements, technical_details)
     elif mode == "log":
         args = sys.argv[2:]
         try:

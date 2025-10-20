@@ -610,3 +610,15 @@ Create a python script which does not need any installation besides the base pyt
 
 ---
 Create a prompt in .github/prompts similar to #file:rdd-copilot.cr-create.prompt.md but this time for tasks. It should use #file:task.py for creation of new tasks (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+
+create a script in .github/scripts which takes the current system time in format YYYYMMDD-HHmm and writes it in the terminal. the script name to be get-local-time.py
+
+---
+
+---
+create a script in .github/scripts which takes the current system time in format YYYYMMDD-HHmm and writes it in the terminal. the script name to be get-local-time.py
+
+---
+change #file:task.py in create mode to take the time in format YYYYMMDD-HHmm as a parameter on top of the other parameters (See <attachments> above for file contents. You may not need to search or read the file again.)
