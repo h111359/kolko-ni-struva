@@ -196,37 +196,26 @@ class KolkoNiStruvaUpdater:
             
             logger.info(f"Created empty {OUTPUT_FILE} with header")
     
-    def get_available_dates_in_data(self):
-        """Get all unique dates from the current data.csv file"""
+
+    def get_available_dates_in_downloads(self):
+        """Get all unique dates from the filenames in downloads/"""
         dates = set()
-        if os.path.exists(OUTPUT_FILE):
-            with open(OUTPUT_FILE, encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    date = row.get('date')
-                    if date:
-                        dates.add(date)
+        for fname in os.listdir(DOWNLOADS_DIR):
+            if fname.endswith(".csv"):
+                date, chain = self.extract_date_chain_from_filename(fname)
+                if date:
+                    dates.add(date)
         return sorted(dates)
     
     def update(self, dates=None):
         """
-        Merge data for the specified dates (if provided) or the last two available dates in downloads/ into data/data.csv.
-        On first run (if build/data.csv does not exist or is empty), scan downloads/ for available dates.
+        Merge data for the specified dates (if provided) or the last two available dates in downloads/ into data.csv.
+        Always scan downloads/ for available dates and ignore previous data.csv contents.
         """
-        all_dates = self.get_available_dates_in_data()
-        # If no dates found in data.csv, scan downloads/ for available dates
+        all_dates = self.get_available_dates_in_downloads()
         if not all_dates:
-            logger.warning("No data.csv found or no dates in data.csv. Scanning downloads/ for available dates...")
-            found_dates = set()
-            for fname in os.listdir(DOWNLOADS_DIR):
-                if fname.endswith(".csv"):
-                    date, chain = self.extract_date_chain_from_filename(fname)
-                    if date:
-                        found_dates.add(date)
-            all_dates = sorted(found_dates)
-            if not all_dates:
-                logger.error("No data files found in downloads/.")
-                return []
+            logger.error("No data files found in downloads/.")
+            return []
         if dates:
             # Only keep dates that are available
             merge_dates = [d for d in dates if d in all_dates]
