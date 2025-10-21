@@ -610,3 +610,33 @@ Create a python script which does not need any installation besides the base pyt
 
 ---
 Create a prompt in .github/prompts similar to #file:rdd-copilot.cr-create.prompt.md but this time for tasks. It should use #file:task.py for creation of new tasks (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+
+create a script in .github/scripts which takes the current system time in format YYYYMMDD-HHmm and writes it in the terminal. the script name to be get-local-time.py
+
+---
+
+---
+create a script in .github/scripts which takes the current system time in format YYYYMMDD-HHmm and writes it in the terminal. the script name to be get-local-time.py
+
+---
+change #file:task.py in create mode to take the time in format YYYYMMDD-HHmm as a parameter on top of the other parameters (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Follow instructions in [rdd-copilot.task-create.prompt.md](file:///home/hromar/Desktop/vscode/kolko-ni-struva/.github/prompts/rdd-copilot.task-create.prompt.md).
+
+---
+Fulfill #file:rdd-copilot.task-plan.prompt.md taking as an example #file:rdd-copilot.task-create.prompt.md  (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Read the #file:rdd-copilot.task-plan.prompt.md. It requires a new functionality in #file:task.py. Apply this functionality (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Follow instructions in [rdd-copilot.task-plan.prompt.md](file:///home/hromar/Desktop/vscode/kolko-ni-struva/.github/prompts/rdd-copilot.task-plan.prompt.md). (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+2025-10-21 00:43:09,576 - ERROR - None of the specified dates found in downloads/: ['2025-10-20', '2025-10-21'] - check why this error is shown (See <attachments> above for file contents. You may not need to search or read the file again.)
+
+---
+Follow instructions in [rdd-copilot.folder-structure-update.prompt.md](file:///home/hromar/Desktop/vscode/kolko-ni-struva/.github/prompts/rdd-copilot.folder-structure-update.prompt.md).

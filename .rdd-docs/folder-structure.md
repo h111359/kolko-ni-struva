@@ -11,14 +11,13 @@ kolko-ni-struva/
 ├── .vscode/                    # VS Code workspace settings
 ├── README.md                   # Project overview and setup instructions
 ├── archive/                    # Archived/legacy files
-├── build/                      # Built application files (production-ready)
+├── web-deploy/                 # Production-ready web assets and outputs
 ├── data/                       # Processed data files and nomenclatures
 ├── downloads/                  # Raw downloaded CSV data files
-├── helper-scripts/             # Utility and helper scripts
-├── kolko-ni-struva/           # Additional source code directory
-├── scraper_venv/              # Python virtual environment
-├── src/                       # Main source code directory
-└── workin-update.py           # Working update script
+├── kolko-ni-struva/            # Additional source code directory (see note below)
+├── scraper_venv/               # Python virtual environment
+├── src/                        # Main source code directory (see note below)
+└── workin-update.py            # Working update script
 ```
 
 ## Directory Descriptions
@@ -28,12 +27,12 @@ kolko-ni-struva/
 - **`.rdd-docs/`**: All project documentation following RDD (Requirements-Driven Development) methodology
 - **`.vscode/`**: Specific setup and configuration for Visual Studio Code workspace
 
-### Source Code & Build
+### Source Code & Production Assets
 - **`src/`**: Main source code directory containing:
   - Python scripts for data processing and scraping
   - HTML, CSS, and JavaScript files for the web interface
   - Deployment documentation and requirements
-- **`build/`**: Production-ready built files including:
+- **`web-deploy/`**: Production-ready web assets and outputs including:
   - Compiled web assets (HTML, CSS, JS)
   - JSON nomenclature files for categories, cities, and trade chains
 - **`kolko-ni-struva/`**: Secondary source code directory (may contain alternative implementations)
@@ -47,7 +46,7 @@ kolko-ni-struva/
   - Download summary logs
 
 ### Development & Utilities
-- **`helper-scripts/`**: Utility scripts for various development and maintenance tasks
+- **`.github/scripts/`**: Utility scripts for various development and maintenance tasks
 - **`scraper_venv/`**: Python virtual environment containing all required dependencies
 - **`archive/`**: Legacy and archived files including old versions of scripts and HTML files
 
@@ -74,7 +73,7 @@ GitHub configuration and automation:
 
 ### File Organization
 - Keep source files in `src/` for development
-- Use `build/` for production-ready compiled assets
+- Use `web-deploy/` for production-ready compiled assets
 - Store raw data in `downloads/`, processed data in `data/`
 - Archive old files in `archive/` rather than deleting them
 
@@ -82,7 +81,7 @@ GitHub configuration and automation:
 1. Raw data downloaded to `downloads/`
 2. Processed and cleaned in `data/`
 3. Source code in `src/` processes the data
-4. Built application in `build/` serves the final product
+4. Built application in `web-deploy/` serves the final product
 
 ### Development Workflow
 - Use the virtual environment in `scraper_venv/` for Python development
@@ -93,5 +92,4 @@ GitHub configuration and automation:
 ## Customization Notes
 - This structure is optimized for a data processing web application with scraping capabilities
 - Maintain clear separation between raw data, processed data, source code, and built assets
-- The dual source directories (`src/` and `kolko-ni-struva/`) may indicate different development approaches or versions
-- Consider consolidating source code directories if they serve similar purposes
+- The dual source directories (`src/` and `kolko-ni-struva/`) may indicate different development approaches or versions. Consider consolidating or clearly documenting the purpose of each to avoid confusion.
