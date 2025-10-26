@@ -1,9 +1,55 @@
-# .gitignore for kolko-ni-struva
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+*.log
+
+# Data directories (not committed)
+data/raw/
+data/interim/
+data/processed/
+!data/raw/README.md
+!data/interim/README.md
+!data/processed/README.md
+
+# Build artifacts
+build/
+!build/web/README.md
+
+# Test outputs
+tests/tmp/
 
 # Ignore all contents of these folders
 downloads/
 helper-scripts/
-scraper_venv/
+.venv/
 test_downloads/
 !.github/
 !.rdd-copilot/
@@ -12,7 +58,6 @@ kolko-ni-struva/
 web-deploy/
 
 # Ignore these files 
-
 data.csv
 prompts-log.md
 task-prompts.md

@@ -84,6 +84,6 @@ Kolko Ni Struva (Колко Ни Струва - How Much Does It Cost) is a data
 
 - **[TR-05] Deployment Platform**: The system shall support deployment to Netlify static hosting platform via REST API (v1), using token-based authentication and direct file upload without CLI dependencies.
 
-- **[TR-06] Version Control**: The system shall use Git for version control with a minimal .gitignore configuration excluding generated data files (downloads/, data.csv), virtual environments (scraper_venv/), and build outputs (kolko-ni-struva/ deployment folder).
+- **[TR-06] Version Control**: The system shall use Git for version control with a minimal .gitignore configuration excluding generated data files (downloads/, data.csv), virtual environments (.venv/), and build outputs (kolko-ni-struva/ deployment folder).
 
 - **[TR-07] External Data Source**: The system shall integrate with kolkostruva.bg/opendata as the authoritative data source, supporting date and account ID parameters for targeted data retrieval.

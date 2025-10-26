@@ -1,0 +1,1 @@
+Minimal README for workflows folder: Contains CI/CD pipeline definitions.
