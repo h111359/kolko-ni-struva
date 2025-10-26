@@ -13,15 +13,17 @@ This document describes the organized structure of the project, designed for:
 ## 🧩 Root Layout
 
 ```
+```
 repo-root/
 ├─ src/                       # Source code (Python + Web)
 │  ├─ py/                     # Python ETL and utilities
-│  │  └─ your_project/
+│  │  └─ kolko-ni-struva/
 │  │     ├─ etl/              # Extract, transform, load modules
 │  │     ├─ schemas/          # Schema definitions, validation models
 │  │     ├─ cli.py            # Command-line entry point
 │  │     └─ __init__.py
 │  └─ web/                    # Frontend source files
+```
 │     ├─ assets/              # Images, CSS, icons
 │     ├─ js/                  # Data fetching and visualization scripts
 │     ├─ index.html
@@ -178,6 +180,56 @@ node_modules/
 | **Deploy to Netlify** | `bash scripts/deploy.sh` | `.\scripts\deploy.ps1` |
 
 Each script runs a full sequence of steps — download, transform, generate, copy assets, and prepare `build/web/` for deployment.
+
+---
+
+## 📝 Adding New Files to the Project
+
+When adding new files, follow this decision tree to place them in the correct location:
+
+### Python Code
+- **ETL modules** (data extraction, transformation, loading): `src/py/kolko-ni-struva/etl/`
+- **Schema definitions** (validation models, data structures): `src/py/kolko-ni-struva/schemas/`
+- **CLI commands**: Add to or extend `src/py/kolko-ni-struva/cli.py`
+- **Utilities and helpers**: Create a `src/py/kolko-ni-struva/lib/` or `src/py/kolko-ni-struva/utils/` folder
+
+### Web Files
+- **HTML pages**: `src/web/` (e.g., `index.html`, `about.html`)
+- **JavaScript**: `src/web/js/` (e.g., `script.js`, `chart.js`)
+- **CSS, images, icons**: `src/web/assets/` (e.g., `style.css`, `logo.png`)
+- **Templates** (if using templating): `src/web/templates/`
+
+### Automation Scripts
+- **Shell scripts** (`.sh`): `scripts/` (e.g., `build.sh`, `deploy.sh`)
+- **PowerShell scripts** (`.ps1`): `scripts/` (e.g., `build.ps1`, `deploy.ps1`)
+- Name scripts descriptively based on their function
+
+### Tests
+- **Test files**: `tests/` (e.g., `test_etl.py`, `test_schema_validation.py`)
+- **Test fixtures** (sample data): `tests/fixtures/`
+- **Temporary test outputs**: `tests/tmp/` (auto-ignored by Git)
+
+### Documentation
+- **User guides** (how to use the system): `docs/user-guides/`
+- **Developer guides** (setup, contribution, coding standards): `docs/developer-guides/`
+- **Requirements** (functional, technical, data): `docs/requirements/`
+- **Specifications** (architecture, API, data models): `docs/specifications/`
+
+### Configuration
+- **Environment files**: Root (e.g., `.env`, `.env.example`)
+- **Application configs**: `configs/` (e.g., `local.env`, `cloud.env`, `prod.env`)
+
+### Data Files
+- **Nomenclatures and reference data**: `data/` (e.g., `category-nomenclature.json`)
+- **Raw downloaded data**: `data/raw/` (not committed to Git)
+- **Interim/processed data**: `data/interim/`, `data/processed/` (not committed to Git)
+
+### Checklist for Adding Files
+1. ✅ Determine the file's purpose (code, web, script, test, docs, config, data)
+2. ✅ Place in the appropriate folder based on the guidelines above
+3. ✅ If creating a new Python module, add `__init__.py` if needed
+4. ✅ Update `.gitignore` if the file should not be committed (e.g., secrets, generated data)
+5. ✅ Update documentation if the file introduces new functionality or changes workflow
 
 ---
 
