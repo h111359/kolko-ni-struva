@@ -17,12 +17,12 @@ Follow-up TODOs: None
 ## Core Principles
 
 ### I. Data Integrity First
-All data operations MUST preserve accuracy and traceability. Source data from kolkostruva.bg MUST be downloaded in original format with timestamps. Data transformations MUST be reversible with clear audit trails. No data modification without explicit version tracking and backup retention.
+All data operations MUST preserve accuracy and traceability. Source data from kolkostruva.bg MUST be downloaded in original format with timestamps. 
 
 **Rationale**: Consumer price data directly impacts financial decisions of price-sensitive users including retired people and low-income families. Data corruption or loss could lead to incorrect purchasing decisions.
 
 ### II. Daily Automation (NON-NEGOTIABLE)
-Data collection MUST run automatically every morning from https://kolkostruva.bg/opendata. Failed downloads MUST trigger alerts and manual intervention procedures. All automation scripts MUST include error handling, retry logic, and comprehensive logging.
+Data collection MUST run automatically accordingly a configurable schedule from https://kolkostruva.bg/opendata. Failed downloads MUST trigger alerts and manual intervention procedures. All automation scripts MUST include error handling, retry logic, and comprehensive logging.
 
 **Rationale**: Stale price data renders the platform useless. Daily automation ensures consumers have current pricing information for their shopping decisions.
 
@@ -43,8 +43,8 @@ All data processing MUST use Python with clear type hints, docstrings, and PEP 8
 
 ## Technical Requirements
 
-**Technology Stack**: Python 3.9+, HTML/CSS/JavaScript for web interface, JSON for data exchange
-**Data Storage**: CSV files for raw data, JSON for nomenclatures, consider SQLite for analytics queries
+**Technology Stack**: Python 3.9+, HTML/CSS/JavaScript for web interface, JSON for data exchange, csv for big fact data
+**Data Storage**: CSV files for raw data, JSON for nomenclatures, consider Supabase for analytics queries
 **External Dependencies**: requests, beautifulsoup4, lxml (current); minimize additional dependencies
 **Performance Standards**: Web pages load <3s on 3G, data processing completes within 1 hour daily
 **Accessibility**: WCAG 2.1 AA compliance for web interfaces

@@ -1,4 +1,29 @@
-# Rules
+# kolko-ni-struva Development Guidelines
 
+Auto-generated from all feature plans. Last updated: 2025-10-26
 
-R01: Each time before answering, run the script `.github/scripts/append_prompt.py` The script should be called with the latest user prompt as an argument.
+## Active Technologies
+
+- (001-file-structure-implementation)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+# Add commands for 
+
+## Code Style
+
+: Follow standard conventions
+
+## Recent Changes
+
+- 001-file-structure-implementation: Added
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
