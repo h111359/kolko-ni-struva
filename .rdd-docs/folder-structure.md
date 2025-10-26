@@ -15,7 +15,7 @@ kolko-ni-struva/
 ├── data/                       # Processed data files and nomenclatures
 ├── downloads/                  # Raw downloaded CSV data files
 ├── kolko-ni-struva/            # Additional source code directory (see note below)
-├── scraper_venv/               # Python virtual environment
+├── .venv/                      # Python virtual environment
 ├── src/                        # Main source code directory (see note below)
 └── workin-update.py            # Working update script
 ```
@@ -47,7 +47,7 @@ kolko-ni-struva/
 
 ### Development & Utilities
 - **`.github/scripts/`**: Utility scripts for various development and maintenance tasks
-- **`scraper_venv/`**: Python virtual environment containing all required dependencies
+- **`.venv/`**: Python virtual environment containing all required dependencies
 - **`archive/`**: Legacy and archived files including old versions of scripts and HTML files
 
 ## .rdd-docs/ Structure
@@ -84,7 +84,7 @@ GitHub configuration and automation:
 4. Built application in `web-deploy/` serves the final product
 
 ### Development Workflow
-- Use the virtual environment in `scraper_venv/` for Python development
+- Use the virtual environment in `.venv/` for Python development
 - Utility scripts go in `helper-scripts/`
 - Follow RDD methodology for documentation in `.rdd-docs/`
 - Use GitHub workflows and scripts in `.github/` for automation
