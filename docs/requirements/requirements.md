@@ -30,7 +30,7 @@ Kolko Ni Struva (Колко Ни Струва - How Much Does It Cost) is a data
 
 - **[FR-02] Multi-Chain Batch Download**: The system shall iterate through all retail chains defined in the trade-chains-nomenclature.json configuration file and download CSV data for each chain for specified dates, implementing polite scraping with delays between requests.
 
-- **[FR-03] Downloaded File Organization**: The system shall store downloaded CSV files in a dedicated downloads/ directory with standardized naming convention "kolko_struva_YYYY-MM-DD_account_N.csv" to enable tracking and identification of data sources.
+- **[FR-03] Downloaded File Organization**: The system shall store downloaded CSV files in a dedicated data/raw/ directory with standardized naming convention "kolko_struva_YYYY-MM-DD_account_N.csv" to enable tracking and identification of data sources.
 
 - **[FR-04] Intelligent Duplicate Prevention**: The system shall prevent duplicate records in the merged data by identifying and removing existing rows matching the same date and chain_id combination before adding new data, supporting idempotent re-runs.
 
@@ -84,6 +84,6 @@ Kolko Ni Struva (Колко Ни Струва - How Much Does It Cost) is a data
 
 - **[TR-05] Deployment Platform**: The system shall support deployment to Netlify static hosting platform via REST API (v1), using token-based authentication and direct file upload without CLI dependencies.
 
-- **[TR-06] Version Control**: The system shall use Git for version control with a minimal .gitignore configuration excluding generated data files (downloads/, data.csv), virtual environments (.venv/), and build outputs (kolko-ni-struva/ deployment folder).
+- **[TR-06] Version Control**: The system shall use Git for version control with a minimal .gitignore configuration excluding generated data files (data/raw/, data.csv), virtual environments (.venv/), and build outputs (kolko-ni-struva/ deployment folder).
 
 - **[TR-07] External Data Source**: The system shall integrate with kolkostruva.bg/opendata as the authoritative data source, supporting date and account ID parameters for targeted data retrieval.
