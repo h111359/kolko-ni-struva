@@ -38,9 +38,9 @@ All tasks from the specification have been completed successfully:
 
 2. **Legacy folders**: The following folders remain in the repository but are ignored by git:
    - `archive/` - contains old scripts for reference
-   - `web-deploy/` - old deployment folder (replaced by `build/web/`)
    - `kolko-ni-struva/` - old structure folder
    - `.venv/` - Python virtual environment (not committed)
+   - **DEPRECATED**: `web-deploy/` - old deployment folder (fully replaced by `build/web/` as of October 27, 2025)
 
 3. **CI/CD workflows**: The `.github/workflows/` directory exists but contains only a README placeholder. Actual workflow files (ci.yml, deploy.yml) can be added when needed.
 
@@ -73,10 +73,13 @@ All tasks from the specification have been completed successfully:
 
 All path references in scripts were updated to reflect new structure:
 
-1. **scripts/update.sh**: Updated Python script paths
-2. **scripts/run-site.sh**: Updated build directory path to `build/web/`
-3. **update_kolko_ni_struva.py**: Updated deployment paths from `web-deploy/` to `build/web/`
-4. **update_kolko_ni_struva.py**: Updated source paths for web files to `src/web/`
+1. **scripts/update.sh**: Updated Python script paths; downloads last 3 days, processes last 2 (October 27, 2025)
+2. **scripts/build.sh**: Updated to process existing data without downloading (October 27, 2025)
+3. **scripts/refresh.sh**: **NEW** - Unified script combining download and build with comprehensive error handling (October 27, 2025)
+4. **scripts/run-site.sh**: Updated build directory path to `build/web/`
+5. **update_kolko_ni_struva.py**: Updated all deployment paths from `web-deploy/` to `build/web/` (October 27, 2025)
+6. **update_kolko_ni_struva.py**: Updated source paths for web files to `src/web/`
+7. **update_kolko_ni_struva.py**: Updated data source from `downloads/` to `data/raw/` (October 27, 2025)
 
 ## New Files Created
 
@@ -103,4 +106,42 @@ All path references in scripts were updated to reflect new structure:
 1. Add actual CI/CD workflow files to `.github/workflows/`
 2. Create test files in `tests/` directory
 3. Add PowerShell versions of shell scripts (`.ps1` files) for Windows support
-4. Remove or clean up legacy folders (`archive/`, `web-deploy/`, `kolko-ni-struva/`)
+
+## Post-Migration Tasks
+
+1. Test new structure with real data processing
+2. Update any remaining internal documentation
+3. Train maintainers on new workflow
+4. Remove or clean up legacy folders (`archive/`, `kolko-ni-struva/`)
+   - **Note**: `web-deploy/` has been fully deprecated and all references removed (October 27, 2025)
+
+## Migration to /build/web Complete (October 27, 2025)
+
+**Status**: ✅ COMPLETE
+
+All references to the deprecated `web-deploy/` folder have been removed from the codebase:
+- ✅ Source code (`src/`) - no references
+- ✅ Scripts (`scripts/`) - no references  
+- ✅ Tests (`tests/`) - no references
+- ✅ All output now uses `build/web/` exclusively
+- ✅ Created unified `refresh.sh` script with comprehensive features:
+  - Downloads last 3 days of data
+  - Processes and generates site with last 2 days
+  - Retry logic for failed downloads
+  - Error handling for missing/incomplete data
+  - Warnings for skipped days
+  - Creates /build/web if missing
+  - Comprehensive logging
+
+**Remaining references** (acceptable):
+- `.gitignore` - appropriately ignoring the old folder
+- Documentation files - explaining the migration for historical reference
+- Specification files - requirements documentation
+
+**Validation**:
+```bash
+# Search confirms no code references to web-deploy
+grep -r "web-deploy" src/ scripts/ tests/
+# Returns: No matches
+```
+
