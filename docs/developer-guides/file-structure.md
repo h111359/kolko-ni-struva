@@ -54,7 +54,6 @@ repo-root/
 │  │  ├─ architecture-diagram.png
 │  │  ├─ pipeline-flow.md
 │  │  ├─ data-model.md
-│  │  └─ api-spec.md
 │  ├─ user-guides/             # End-user and analyst guides
 │  │  ├─ getting-started.md
 │  │  ├─ usage-examples.md
@@ -80,8 +79,10 @@ repo-root/
 │  └─ prod.env
 │
 ├─ scripts/                   # Shell and PowerShell automation scripts
-│  ├─ build.sh                # Linux/macOS build script
+│  ├─ refresh.sh              # Unified data refresh (download + build) - RECOMMENDED
+│  ├─ build.sh                # Linux/macOS build script (process existing data)
 │  ├─ build.ps1               # Windows PowerShell build script
+│  ├─ update.sh               # Legacy update script (deprecated - use refresh.sh)
 │  ├─ test.sh                 # Linux/macOS test script
 │  ├─ test.ps1                # Windows PowerShell test script
 │  ├─ deploy.sh               # Linux/macOS deploy script
@@ -175,9 +176,26 @@ node_modules/
 
 | Purpose | Linux/macOS Command | Windows Command |
 |----------|--------------------|----------------|
-| **Download & transform data, build web site** | `bash scripts/build.sh` | `.\scriptsuild.ps1` |
-| **Run tests** | `bash scripts/test.sh` | `.\scripts	est.ps1` |
+| **Unified refresh (download + build)** | `bash scripts/refresh.sh` | *PowerShell version coming soon* |
+| **Download & transform data, build web site** | `bash scripts/build.sh` | `.\scripts\build.ps1` |
+| **Run tests** | `bash scripts/test.sh` | `.\scripts\test.ps1` |
 | **Deploy to Netlify** | `bash scripts/deploy.sh` | `.\scripts\deploy.ps1` |
+
+### Recommended Workflow
+
+**For regular data refreshes**, use the unified `refresh.sh` script:
+```bash
+bash scripts/refresh.sh
+```
+
+This script:
+- ✅ Downloads data for the last 3 days
+- ✅ Processes and generates site with only the last 2 days
+- ✅ Implements retry logic for failed downloads
+- ✅ Handles missing/incomplete data gracefully
+- ✅ Creates `/build/web` if it doesn't exist
+- ✅ Provides comprehensive logging
+- ✅ Warns about skipped days
 
 Each script runs a full sequence of steps — download, transform, generate, copy assets, and prepare `build/web/` for deployment.
 

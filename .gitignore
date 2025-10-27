@@ -15,7 +15,6 @@ ENV/
 env/
 
 # IDE and Editor
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -47,7 +46,6 @@ build/
 tests/tmp/
 
 # Ignore all contents of these folders
-downloads/
 helper-scripts/
 .venv/
 test_downloads/
