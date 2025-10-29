@@ -1,1 +1,0 @@
-Minimal README for specifications docs folder: Contains architecture and data flow documentation.

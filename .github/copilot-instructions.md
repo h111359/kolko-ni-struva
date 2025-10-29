@@ -9,3 +9,10 @@ All project guidelines, workflows, and conventions are documented in the followi
 - [User Guides](../../docs/user-guides/getting-started.md)
 
 Refer to these documents for authoritative instructions and standards.
+
+## Active Technologies
+- Python 3.9+ + requests, beautifulsoup4, lxml, csv (stdlib), json (stdlib) (003-data-file-refactor)
+- CSV files for fact data, JSON for dimension nomenclatures, file-based data storage (003-data-file-refactor)
+
+## Recent Changes
+- 003-data-file-refactor: Added Python 3.9+ + requests, beautifulsoup4, lxml, csv (stdlib), json (stdlib)

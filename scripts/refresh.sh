@@ -278,14 +278,25 @@ check_downloaded_data() {
 
 process_data() {
     local dates=("$@")
-    log_info "🔄 Starting data processing for last 2 days..."
+    log_info "🔄 Starting data normalization and processing for last 2 days..."
     log_info "Processing dates: ${dates[*]}"
     
-    if python src/py/kolko-ni-struva/etl/update_kolko_ni_struva.py --dates "${dates[@]}" 2>&1 | tee -a "$LOG_FILE"; then
-        log_success "Data processing completed successfully"
+    # Step 1: Normalize data into star schema
+    log_info "Step 1: Normalizing raw data into star schema..."
+    if PYTHONPATH="${PROJECT_ROOT}/src/py" python3 -m kolko-ni-struva.cli normalize --dates "${dates[@]}" 2>&1 | tee -a "$LOG_FILE"; then
+        log_success "Data normalization completed successfully"
+    else
+        log_error "Data normalization failed"
+        return 4
+    fi
+    
+    # Step 2: Deploy normalized files to build/web
+    log_info "Step 2: Deploying normalized data to build/web..."
+    if PYTHONPATH="${PROJECT_ROOT}/src/py" python3 -m kolko-ni-struva.cli update --dates "${dates[@]}" 2>&1 | tee -a "$LOG_FILE"; then
+        log_success "Data deployment completed successfully"
         return 0
     else
-        log_error "Data processing failed"
+        log_error "Data deployment failed"
         return 4
     fi
 }

@@ -20,10 +20,6 @@ env/
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
-
 # Environment
 .env
 .env.*
@@ -31,32 +27,14 @@ Thumbs.db
 *.log
 
 # Data directories (not committed)
-data/raw/
-data/interim/
-data/processed/
-!data/raw/README.md
-!data/interim/README.md
-!data/processed/README.md
+data/
 
 # Build artifacts
 build/
-!build/web/README.md
 
 # Test outputs
 tests/tmp/
 
-# Ignore all contents of these folders
-helper-scripts/
-.venv/
-test_downloads/
-!.github/
-!.rdd-copilot/
-archive/
-kolko-ni-struva/
-web-deploy/
 
-# Ignore these files 
-data.csv
-prompts-log.md
-task-prompts.md
+
 

@@ -1,1 +1,0 @@
-Minimal README for sample_data test fixtures folder: Contains sample datasets for tests.
