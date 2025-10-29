@@ -1,1 +1,0 @@
-Minimal README for developer guides docs folder: Contains developer setup and contribution guides.

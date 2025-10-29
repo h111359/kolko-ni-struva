@@ -1,1 +1,0 @@
-Minimal README for js folder: Contains frontend JavaScript for data fetching and visualization.

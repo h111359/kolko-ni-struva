@@ -1,1 +1,0 @@
-Minimal README for assets folder: Contains images, CSS, and icons for frontend.
