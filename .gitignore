@@ -31,6 +31,7 @@ Thumbs.db
 *.log
 
 # Data directories (not committed)
+data/
 data/raw/
 data/interim/
 data/processed/
