@@ -1,105 +1,61 @@
 # 📁 Project File Structure (Shell & PowerShell Version + Documentation)
 
-This document describes the organized structure of the project, designed for:
-- Python-based ETL (Extract–Transform–Load)
-- Star-schema data outputs (JSON dimensions + CSV facts)
-- Static web reporting via Netlify
-- Local development, testing, and scheduled cloud execution
-- Automation using **plain shell and PowerShell scripts**
-- Comprehensive documentation for requirements, specifications, and guides
-
----
+This document describes the organized structure of the project.
 
 ## 🧩 Root Layout
 
 ```
-```
 repo-root/
-├─ src/                       # Source code (Python + Web)
-│  ├─ py/                     # Python ETL and utilities
-│  │  └─ kolko-ni-struva/
-│  │     ├─ etl/              # Extract, transform, load modules
-│  │     ├─ schemas/          # Schema definitions, validation models
-│  │     ├─ cli.py            # Command-line entry point
-│  │     └─ __init__.py
-│  └─ web/                    # Frontend source files
-```
-│     ├─ assets/              # Images, CSS, icons
-│     ├─ js/                  # Data fetching and visualization scripts
-│     ├─ index.html
-│     └─ templates/           # Optional templating
-│
-├─ data/                      # Local ETL data (not committed)
-│  ├─ raw/                    # Downloaded raw data
-│  ├─ interim/                # Cleaned / intermediate data
-│  └─ processed/              # Final star schema output
-│     ├─ dims/                # Dimension tables (JSON)
-│     └─ facts/               # Fact tables (CSV)
-│
-├─ build/                     # Generated deployment artifacts
-│  └─ web/                    # Final static site for Netlify
-│     ├─ data/
-│     │  ├─ dims/
-│     │  └─ facts/
-│     ├─ assets/
-│     ├─ js/
-│     └─ index.html
-│
-├─ docs/                      # Full project documentation
-│  ├─ requirements/            # Requirements documents
-│  │  ├─ functional-requirements.md
-│  │  ├─ technical-requirements.md
-│  │  └─ data-requirements.md
-│  ├─ specifications/          # Architecture and data flow
-│  │  ├─ architecture-diagram.png
-│  │  ├─ pipeline-flow.md
-│  │  ├─ data-model.md
-│  ├─ user-guides/             # End-user and analyst guides
-│  │  ├─ getting-started.md
-│  │  ├─ usage-examples.md
-│  │  └─ troubleshooting.md
-│  ├─ developer-guides/        # Developer setup and contribution
-│  │  ├─ setup.md
-│  │  ├─ contributing.md
-│  │  ├─ coding-standards.md
-│  │  └─ file-structure.md     # This document (project structure reference)
-│  ├─ changelog.md
-│  └─ index.md
-│
-├─ tests/                     # Automated tests
-│  ├─ fixtures/               # Sample datasets for tests
-│  │  └─ sample_data/
-│  ├─ test_etl.py
-│  ├─ test_schema_validation.py
-│  └─ tmp/                    # Temporary outputs (ignored)
-│
-├─ configs/                   # Environment configuration files
-│  ├─ local.env
-│  ├─ cloud.env
-│  └─ prod.env
-│
-├─ scripts/                   # Shell and PowerShell automation scripts
-│  ├─ refresh.sh              # Unified data refresh (download + build) - RECOMMENDED
-│  ├─ build.sh                # Linux/macOS build script (process existing data)
-│  ├─ build.ps1               # Windows PowerShell build script
-│  ├─ update.sh               # Legacy update script (deprecated - use refresh.sh)
-│  ├─ test.sh                 # Linux/macOS test script
-│  ├─ test.ps1                # Windows PowerShell test script
-│  ├─ deploy.sh               # Linux/macOS deploy script
-│  └─ deploy.ps1              # Windows PowerShell deploy script
-│
-├─ .github/workflows/         # CI/CD pipelines
-│  ├─ ci.yml                  # Run tests and build
-│  └─ deploy.yml              # Optional deployment
-│
-├─ .env.example               # Example environment variables
-├─ .gitignore                 # Ignored files and folders
-├─ netlify.toml               # Netlify configuration
-├─ pyproject.toml             # Python dependencies and settings
-└─ README.md                  # Main project documentation
+├── .github/                      # GitHub workflows, prompts, Copilot instructions
+│   ├── prompts/                  # Prompt templates for Copilot and automation
+│   └── copilot-instructions.md   # Copilot agent instructions
+├── .specify/                     # Specify tool configs (if used)
+├── .venv/                        # Python virtual environment (local, ignored)
+├── .vscode/                      # VS Code workspace settings
+│   └── settings.json             # Editor config
+├── build/                        # Generated build artifacts (ignored by Git)
+│   └── web/                      # Static site output for Netlify
+├── data/                         # All data files (not committed)
+│   ├── interim/                  # Temporary/intermediate data
+│   ├── processed/                # Final processed data
+│   │   ├── dims/                 # Dimension tables (JSON)
+│   │   └── facts/                # Fact tables (CSV)
+│   ├── raw/                      # Raw downloaded data (CSV)
+├── docs/                         # Documentation
+│   ├── changes/                  # Change logs and templates
+│   │   └── template/             # Change log templates
+│   ├── specifications/           # Technical specs
+│   ├── user-guides/              # User documentation
+│   ├── data-model.md             # Data model description
+│   ├── file-structure.md         # This file
+│   └── requirements.md           # Requirements document
+├── logs/                         # ETL and audit logs
+├── scripts/                      # Automation scripts (shell, PowerShell)
+├── specs/                        # Implementation specs and plans
+├── src/                          # Source code
+│   ├── py/                       # Python code
+│   │   ├── data/                 # Python data helpers
+│   │   ├── kolko-ni-struva/      # Main Python package
+│   │   │   ├── etl/              # ETL modules
+│   │   │   ├── schemas/          # Schema definitions
+│   │   └── logs/                 # Python log helpers
+│   └── web/                      # Web app source
+│       ├── assets/               # CSS, images, icons
+│       ├── js/                   # JavaScript files
+│       ├── templates/            # HTML templates
+│       └── index.html            # Main HTML page
+├── tests/                        # Automated tests
+│   ├── fixtures/                 # Test fixtures/sample data
+│   ├── tmp/                      # Temporary test outputs
+├── input.md                      # Input/scratch file for prompts
+├── netlify.toml                  # Netlify deployment config
+├── pyproject.toml                # Python project metadata
+├── README.md                     # Project overview
+├── requirements.txt              # Python dependencies
+├── .env.example                  # Example environment variables
+├── .gitignore                    # Git ignore rules
 ```
 
----
 
 ## ⚙️ Key Principles
 
@@ -108,98 +64,7 @@ repo-root/
 - `build/` → generated artifacts (ignored by Git)  
 - Netlify publishes from `build/web/`
 
-### 2. Data Lifecycle
-| Stage | Folder | Description |
-|--------|---------|-------------|
-| **Raw** | `data/raw/` | Direct downloads, unmodified |
-| **Interim** | `data/interim/` | Cleaned/normalized data |
-| **Processed** | `data/processed/` | Star schema: JSON dims + CSV facts |
 
-### 3. Documentation
-- All project documentation lives under `docs/`
-- `developer-guides/` holds internal developer materials, including **file-structure.md**
-- Keep diagrams and flowcharts in `docs/specifications/`
-- Use `README.md` as a summary linking to detailed documentation
-
-### 4. Testing
-- All tests in `tests/`  
-- Use `tmp_path` for temporary output (no overwrite of real data)  
-- Run locally:  
-  ```bash
-  bash scripts/test.sh
-  ```
-  or on Windows:
-  ```powershell
-  .\scripts\test.ps1
-  ```
-
-### 5. Compute Environment (Cloud)
-- The **same codebase** runs locally and in the cloud.  
-- CI/CD services use shell or PowerShell scripts to build and deploy automatically.
-
-### 6. Deployment
-- **Static site:** deployed to Netlify from `build/web/`
-- **ETL jobs:** scheduled in cloud (GitHub Actions, Azure Functions)
-- **Configuration:** environment variables in `.env` or platform secrets
-
-### 7. .gitignore Essentials
-```gitignore
-# Python
-__pycache__/
-*.pyc
-.venv/
-.env
-
-# Data
-data/raw/
-data/interim/
-data/processed/
-!data/processed/README.md
-
-# Build artifacts
-build/
-dist/
-
-# Tests
-tests/tmp/
-
-# Node
-node_modules/
-
-# OS/editor
-.DS_Store
-```
-
----
-
-## 🧠 Typical Commands (Shell/PowerShell)
-
-| Purpose | Linux/macOS Command | Windows Command |
-|----------|--------------------|----------------|
-| **Unified refresh (download + build)** | `bash scripts/refresh.sh` | *PowerShell version coming soon* |
-| **Download & transform data, build web site** | `bash scripts/build.sh` | `.\scripts\build.ps1` |
-| **Run tests** | `bash scripts/test.sh` | `.\scripts\test.ps1` |
-| **Deploy to Netlify** | `bash scripts/deploy.sh` | `.\scripts\deploy.ps1` |
-
-### Recommended Workflow
-
-**For regular data refreshes**, use the unified `refresh.sh` script:
-```bash
-bash scripts/refresh.sh
-```
-
-This script:
-- ✅ Downloads data for the last 3 days
-- ✅ Processes and generates site with only the last 2 days
-- ✅ Implements retry logic for failed downloads
-- ✅ Handles missing/incomplete data gracefully
-- ✅ Creates `/build/web` if it doesn't exist
-- ✅ Provides comprehensive logging
-- ✅ Warns about skipped days
-
-Each script runs a full sequence of steps — download, transform, generate, copy assets, and prepare `build/web/` for deployment.
-
----
 
 ## 📝 Adding New Files to the Project
 
@@ -242,24 +107,4 @@ When adding new files, follow this decision tree to place them in the correct lo
 - **Raw downloaded data**: `data/raw/` (not committed to Git)
 - **Interim/processed data**: `data/interim/`, `data/processed/` (not committed to Git)
 
-### Checklist for Adding Files
-1. ✅ Determine the file's purpose (code, web, script, test, docs, config, data)
-2. ✅ Place in the appropriate folder based on the guidelines above
-3. ✅ If creating a new Python module, add `__init__.py` if needed
-4. ✅ Update `.gitignore` if the file should not be committed (e.g., secrets, generated data)
-5. ✅ Update documentation if the file introduces new functionality or changes workflow
 
----
-
-## ✅ Summary
-
-- **Source of truth:** `src/`  
-- **Generated artifacts:** `data/processed/`, `build/web/`  
-- **Automation:** via shell and PowerShell scripts in `scripts/`  
-- **Documentation:** organized in `docs/` for users, developers, and specifications  
-- **This document:** `docs/developer-guides/file-structure.md` (developer reference)  
-- **Tests:** isolated and automated (no data overwrite)  
-- **Cloud compute:** uses same scripts for CI/CD  
-- **Deployment:** Netlify hosts static reports built with one command  
-
-This structure is complete, reproducible, and maintainable — ready for both local and cloud-based workflows, and fully documented.
