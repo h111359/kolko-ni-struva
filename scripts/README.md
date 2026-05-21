@@ -1,1 +1,0 @@
-Minimal README for scripts folder: Contains shell and PowerShell automation scripts.

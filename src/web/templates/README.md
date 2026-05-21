@@ -1,1 +1,0 @@
-Minimal README for templates folder: Contains optional frontend templates.

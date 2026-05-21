@@ -1,0 +1,1010 @@
+/*
+ * App.css: Main application styles for the Kolko Ni Struva React app.
+ * Ported from build-legacy/web/style.css — preserves all class names,
+ * colours, and keyframe animations from the original vanilla-JS app.
+ * Updated in R-20260512-2138: added two-breakpoint responsive layout (mobile ≤ 600px, tablet ≤ 900px).
+ * Updated in R-20260515-1003: added .table-scroll-wrapper, sortable-th, sort-indicator,
+ *   and filter-row CSS rules for the FileRowsPanel sort and filter feature.
+ * Updated in R-20260516-1313: added .file-rows-table compact layout rules (reduced padding,
+ *   font-size, white-space: normal, word-break: break-word) for the 12-column detail table;
+ *   added .file-rows-table th input min-height rule inside mobile breakpoint.
+ * Sections: Layout Body, Header, Date Selector, Navigation, Page Sections,
+ *   Landing Page, Feature Cards, CTA, Report Section, Controls, Chart, Table,
+ *   Query Log, Footer, Utilities, Responsive Layout.
+ */
+
+/* ============================================================
+   Layout Body
+   ============================================================ */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* Purple gradient background matching the legacy app */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+  color: #333;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+header {
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+}
+
+header h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+header .subtitle {
+  font-size: 1.1em;
+  opacity: 0.9;
+  margin-bottom: 15px;
+}
+
+/* ============================================================
+   Date Selector
+   ============================================================ */
+.data-date-selector {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.data-date-selector label {
+  color: white;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+
+.date-select {
+  padding: 8px 20px;
+  font-size: 0.95em;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  color: #667eea;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.date-select:hover {
+  background: white;
+  border-color: white;
+}
+
+.date-select:focus {
+  outline: none;
+  background: white;
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+.main-nav {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 25px;
+}
+
+.nav-btn {
+  padding: 12px 25px;
+  font-size: 1em;
+  font-weight: 600;
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.nav-btn.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================================
+   Page Sections
+   ============================================================ */
+.page-section {
+  display: none;
+}
+
+.page-section.active {
+  display: block;
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   Main wrapper
+   ============================================================ */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Landing Page
+   ============================================================ */
+.landing-page {
+  background: white;
+  border-radius: 12px;
+  padding: 50px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.landing-content h2 {
+  color: #667eea;
+  font-size: 2.2em;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.intro-text {
+  font-size: 1.2em;
+  line-height: 1.8;
+  color: #555;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.intro-text a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.intro-text a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   Feature Cards
+   ============================================================ */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.feature-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+}
+
+.feature-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+}
+
+.feature-card h3 {
+  color: #667eea;
+  font-size: 1.4em;
+  margin-bottom: 15px;
+}
+
+.feature-card p {
+  color: #666;
+  line-height: 1.6;
+  font-size: 0.95em;
+}
+
+/* ============================================================
+   CTA Section
+   ============================================================ */
+.cta-section {
+  text-align: center;
+  padding: 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.cta-text {
+  font-size: 1.1em;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ============================================================
+   Report Section
+   ============================================================ */
+.report-section {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.report-section h2 {
+  color: #667eea;
+  margin-bottom: 25px;
+  font-size: 1.8em;
+  border-bottom: 3px solid #667eea;
+  padding-bottom: 10px;
+}
+
+/* ============================================================
+   Controls (dropdowns)
+   ============================================================ */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 30px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
+  flex: 1;
+}
+
+.control-group label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95em;
+}
+
+.select-control {
+  padding: 12px 15px;
+  font-size: 1em;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.select-control:hover {
+  border-color: #667eea;
+}
+
+.select-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ============================================================
+   Chart (horizontal bar chart — Report 1)
+   ============================================================ */
+.chart-container {
+  min-height: 300px;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.chart-bar {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fixed label column width to align bars consistently */
+.chart-bar-label {
+  width: 200px;
+  font-size: 0.9em;
+  color: #555;
+  font-weight: 500;
+  padding-right: 15px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-bar-visual {
+  height: 28px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-bar-visual:hover {
+  transform: scaleX(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.chart-bar-value {
+  margin-left: 12px;
+  font-weight: 600;
+  color: #667eea;
+  font-size: 0.95em;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Results Table
+   ============================================================ */
+
+/* table-scroll-wrapper enables horizontal scroll for wide tables (the 12-column
+   FileRowsPanel detail table and the FileDetailPage summary table) on viewports
+   narrower than the full table width, preventing overflow beyond the card boundary. */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.results-container {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.results-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.results-table th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.results-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.results-table tbody tr:hover {
+  background: #f0f4ff;
+}
+
+.results-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.price-cell {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 1.05em;
+}
+
+/* Sortable column headers in the FileRowsPanel detail table: pointer cursor and
+   no user-select so clicks feel interactive and do not select text accidentally. */
+.results-table th.sortable-th {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Slightly lighter gradient on hover reinforces the clickable nature of the header. */
+.results-table th.sortable-th:hover {
+  background: linear-gradient(135deg, #7a8fe8 0%, #8560b0 100%);
+}
+
+/* Sort direction indicator: small inline symbol after the column label.
+   aria-hidden on the element itself keeps it out of the accessibility tree. */
+.sort-indicator {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+
+/* Filter row lives inside <thead> beneath the sortable data-header row.
+   White background overrides the thead purple gradient for visual distinction. */
+.filter-row th {
+  background: white;
+  padding: 6px 8px;
+}
+
+/* Filter inputs: full-column-width text inputs styled to match table cell widths.
+   box-sizing: border-box prevents inputs from overflowing their column containers. */
+.filter-row th input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 0.85em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #333;
+  outline-offset: 2px;
+}
+
+/* Focus ring on filter inputs using the primary brand colour for consistency. */
+.filter-row th input:focus {
+  border-color: #667eea;
+  outline: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+/* ============================================================
+   File Rows Detail Table (compact layout)
+   ============================================================ */
+
+/* Scoped overrides for the 12-column FileRowsPanel detail table (R-20260516-1313).
+   Reduced padding and font-size allow 12 columns to fit within ~1200px at standard
+   desktop width without horizontal overflow (SC-1). */
+.file-rows-table th {
+  padding: 6px 8px;
+  font-size: 0.8em;
+  /* white-space: normal lets header text wrap so columns hold a narrower minimum width. */
+  white-space: normal;
+}
+
+/* Body cells: compact padding and word wrapping for long product names.
+   word-break: break-word prevents long unspaced strings from stretching the layout. */
+.file-rows-table td {
+  padding: 5px 8px;
+  font-size: 0.8em;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* ============================================================
+   Pagination Controls (FileRowsPanel modern bar)
+   ============================================================ */
+
+/* Flex container for the five-element pagination bar:
+   First « | Previous ‹ | Page X of Y | Next › | Last ».
+   gap: 6px keeps buttons and the indicator close without crowding. */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* Shared style for all pagination buttons: consistent size, brand colour,
+   rounded corners and a hover lift that matches the nav button style. */
+.pagination-btn {
+  padding: 6px 12px;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.18);
+  border-color: rgba(102, 126, 234, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Edge buttons (First «, Last ») use a slightly stronger fill to distinguish
+   them visually from the adjacent Previous/Next buttons. */
+.pagination-btn--edge {
+  background: rgba(102, 126, 234, 0.14);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Page indicator: non-interactive span between Previous and Next buttons.
+   min-width prevents the bar from shifting width when the number changes. */
+.pagination-indicator {
+  padding: 6px 12px;
+  font-size: 0.9em;
+  color: #555;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* ============================================================
+   File Row Detail Modal
+   ============================================================ */
+
+/* Full-viewport semi-transparent backdrop; centres the card vertically and
+   horizontally using flexbox. z-index 1000 matches RecordDetailModal. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal card: white rounded card with shadow; max-height + overflowY allow the
+   card to scroll internally when content exceeds 80% of the viewport height. */
+.file-row-detail-modal-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px 28px 20px;
+  max-width: 580px;
+  width: 92%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  position: relative;
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+/* Modal title: consistent with RecordDetailModal heading style. */
+.file-row-detail-modal-title {
+  margin: 0 0 14px;
+  color: #333;
+  font-size: 1.15em;
+  padding-right: 28px; /* Reserve space so long titles do not overlap the ✕ button. */
+}
+
+/* Section label above each dl group (display fields and surrogate keys).
+   Small caps-like treatment using font-weight + color to visually separate
+   the two data groups without adding a full heading level. */
+.file-row-detail-modal-section-label {
+  margin: 0 0 8px;
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #888;
+}
+
+/* Two-column definition list grid used for both display fields and key IDs.
+   auto 1fr gives the label (dt) its natural width and lets the value (dd) fill
+   the rest of the card width. */
+.file-row-detail-modal-dl {
+  margin: 0 0 4px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+}
+
+.file-row-detail-modal-dl dt {
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.file-row-detail-modal-dl dd {
+  margin: 0;
+  color: #222;
+  word-break: break-word;
+}
+
+/* Monospace font for surrogate key values so numeric IDs are easier to read
+   and distinguish from formatted display values. */
+.file-row-detail-modal-dl--keys dd {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.92em;
+  color: #444;
+}
+
+/* Visual divider separating display fields from the technical ID section. */
+.file-row-detail-modal-divider {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 14px 0 10px;
+}
+
+/* Close button: absolute top-right, no background, consistent with RecordDetailModal. */
+.file-row-detail-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.file-row-detail-modal-close:hover {
+  color: #333;
+}
+
+/* ============================================================
+   Query Log Page
+   ============================================================ */
+.query-log-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.query-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.query-log-intro {
+  color: #666;
+  line-height: 1.6;
+  max-width: 760px;
+  margin-top: 10px;
+}
+
+.query-log-clear-btn {
+  flex-shrink: 0;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  border-color: rgba(102, 126, 234, 0.2);
+}
+
+.query-log-clear-btn:hover {
+  background: rgba(102, 126, 234, 0.14);
+  border-color: rgba(102, 126, 234, 0.32);
+}
+
+.query-log-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.query-log-meta {
+  color: #555;
+  font-size: 0.95em;
+}
+
+.query-log-table td {
+  vertical-align: top;
+}
+
+.query-log-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.query-log-status-success {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.query-log-status-error {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.query-log-details summary {
+  cursor: pointer;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.query-log-details pre {
+  margin-top: 10px;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #374151;
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 1.1em;
+}
+
+.loading-text {
+  text-align: center;
+  padding: 40px;
+  color: #667eea;
+  font-size: 1.1em;
+}
+
+.error-text {
+  text-align: center;
+  padding: 20px;
+  color: #e53e3e;
+  font-size: 1em;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+footer {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 40px;
+  padding: 20px;
+  font-size: 0.9em;
+}
+
+footer a {
+  color: white;
+  font-weight: 600;
+}
+
+/* ============================================================
+   Responsive Layout
+   ============================================================ */
+
+/*
+ * Tablet breakpoint (≤ 900px): covers tablet portrait and large-phone landscape.
+ * Design intent: reduce horizontal density, enable table scrolling, tighten spacing.
+ * Target: viewports 601px – 900px wide (and inherited by the 600px block below).
+ */
+@media (max-width: 900px) {
+  /* Stack query-log header so the clear button does not push off-screen */
+  .query-log-header {
+    flex-direction: column;
+  }
+
+  /* Full-width clear button when stacked */
+  .query-log-clear-btn {
+    width: 100%;
+  }
+
+  /* Horizontal scroll for wide query-log table */
+  .query-log-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* Allow results containers to scroll horizontally rather than overflow the viewport.
+     Applies to Report 2 and Report 3 seven-column tables (SC-2, SC-5). */
+  .results-container {
+    overflow-x: auto;
+  }
+
+  /* Reduce report section inner padding on tablet to reclaim horizontal space */
+  .report-section {
+    padding: 20px;
+  }
+
+  /* Allow control groups to shrink below their desktop 250px minimum on tablet */
+  .control-group {
+    min-width: 180px;
+  }
+
+  /* Reduce nav button padding so five buttons fit comfortably on one or two lines */
+  .nav-btn {
+    padding: 10px 18px;
+    font-size: 0.95em;
+  }
+}
+
+/*
+ * Mobile breakpoint (≤ 600px): covers phones in portrait and landscape.
+ * Design intent: single-column layout, enlarged touch targets, compact typography.
+ * Target: viewports up to 600px wide (320px minimum supported width).
+ */
+@media (max-width: 600px) {
+  /* Reduce body padding so the gradient does not eat into content width on phones.
+     At 320px, 20px × 2 = 40px of the 320px viewport is consumed by padding; reducing
+     to 8px recovers 24px of usable content width. */
+  body {
+    padding: 8px;
+  }
+
+  /* Tighten header bottom margin on mobile to reduce blank space below the nav */
+  header {
+    margin-bottom: 20px;
+  }
+
+  /* Reduce h1 font size so the Bulgarian heading fits on a single line at 320px.
+     2.5em ≈ 40px at the default 16px base; 1.5em ≈ 24px comfortably fits. */
+  header h1 {
+    font-size: 1.5em;
+  }
+
+  /* Reduce subtitle font size proportionally */
+  header .subtitle {
+    font-size: 0.95em;
+  }
+
+  /* Stack date selector label and select vertically on very narrow screens */
+  .data-date-selector {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Full-width date select on mobile for easier tapping */
+  .date-select {
+    width: 100%;
+    padding: 10px 12px;
+  }
+
+  /* Reduce nav button size to prevent awkward wrapping of long Bulgarian labels.
+     Font size reduced to keep emoji + text on one line where possible. */
+  .nav-btn {
+    padding: 10px 14px;
+    font-size: 0.85em;
+  }
+
+  /* Reduce landing page padding so content is not squeezed on a 320px phone.
+     At 320px, 50px × 2 = 100px consumed; 16px × 2 = 32px, leaving 256px for content. */
+  .landing-page {
+    padding: 16px;
+  }
+
+  /* Scale down the landing content heading proportionally */
+  .landing-content h2 {
+    font-size: 1.5em;
+  }
+
+  /* Reduce intro text size slightly to improve line length on narrow screens */
+  .intro-text {
+    font-size: 1em;
+    margin-bottom: 30px;
+  }
+
+  /* Tighten feature card inner padding on mobile */
+  .feature-card {
+    padding: 20px;
+  }
+
+  /* Tighten report section padding and heading on mobile */
+  .report-section {
+    padding: 14px;
+  }
+
+  .report-section h2 {
+    font-size: 1.3em;
+  }
+
+  /* Stretch each control group to full width on mobile so dropdowns are easy to tap.
+     min-width override removes the 250px floor set for desktop. */
+  .control-group {
+    min-width: 100%;
+    flex: unset;
+  }
+
+  /* Enforce a 44px minimum touch target height on dropdowns (Google/WCAG guideline).
+     At the default 16px font size, padding: 12px 15px gives ~40px; raising to 14px
+     achieves 44px. */
+  .select-control {
+    padding: 14px 15px;
+    min-height: 44px;
+  }
+
+  /*
+   * Chart bar — stacked layout on mobile (Q001 Option B).
+   * Design intent: label above bar, price below bar — fully readable for long
+   * Bulgarian category names without truncation or horizontal overflow.
+   * The horizontal flex row layout is replaced with a column stack per bar entry.
+   */
+  .chart-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 16px 0;
+  }
+
+  /* Chart bar label: reset fixed width and right-align so it spans full container width */
+  .chart-bar-label {
+    width: 100%;
+    text-align: left;
+    white-space: normal;
+    padding-right: 0;
+    padding-bottom: 4px;
+  }
+
+  /* Chart bar visual: full container width instead of percentage of remaining space */
+  .chart-bar-visual {
+    width: 100% !important;
+    /* !important overrides the inline width% style set by Report1.jsx proportional scaling.
+       On mobile the stacked layout makes proportional widths meaningless because the
+       bar occupies the full container; the inline style cannot be suppressed otherwise. */
+    height: 22px;
+  }
+
+  /* Chart bar value: remove left margin that was for horizontal flow */
+  .chart-bar-value {
+    margin-left: 0;
+    margin-top: 4px;
+    font-size: 0.9em;
+  }
+
+  /* Results table container: allow horizontal scroll (SC-2) */
+  .results-container {
+    padding: 10px;
+    overflow-x: auto;
+  }
+
+  /* Tighten table cell padding on mobile to reduce minimum row width */
+  .results-table th,
+  .results-table td {
+    padding: 10px 10px;
+    font-size: 0.9em;
+  }
+
+  /* Ensure filter inputs inside the compact file-rows-table remain at least 44px
+     tall on mobile to meet WCAG touch-target guidelines (44px minimum). */
+  .file-rows-table th input {
+    min-height: 44px;
+  }
+
+  /* Pagination buttons: enlarge to 44px min-height for touch targets on mobile. */
+  .pagination-btn {
+    min-height: 44px;
+    min-width: 44px;
+    font-size: 1em;
+  }
+
+  /* File row detail modal card: reduce horizontal padding on mobile to maximise
+     content width on 320px viewports. */
+  .file-row-detail-modal-card {
+    padding: 16px 14px 14px;
+    max-height: 88vh;
+  }
+}

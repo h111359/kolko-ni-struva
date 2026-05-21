@@ -1,0 +1,23 @@
+/*
+ * index.css: Global CSS reset and base typography for the Kolko Ni Struva React app.
+ * Sections: Reset, Body Base.
+ */
+
+/* ============================================================
+   Reset
+   ============================================================ */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   Body Base
+   ============================================================ */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}

@@ -1,0 +1,171 @@
+
+> kolko-ni-struva-react@0.0.0 test
+> vitest run --run
+
+
+ RUN  v3.2.4 /home/hromar/Desktop/projects/kolko-ni-struva-2/react-app
+
+stderr | src/components/FileDetailPage.test.jsx > FileDetailPage > T6: clicking a file row renders FileRowsPanel for the selected file
+Error: Uncaught [Error: [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+]
+    at reportException (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:353:9)
+    at invokeEventListeners (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
+    at HTMLUnknownElement.dispatchEvent (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+    at Object.invokeGuardedCallbackDev (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:4213:16)
+    at invokeGuardedCallback (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:4277:31)
+    at reportUncaughtErrorInDEV (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:22877:5)
+    at captureCommitPhaseError (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:27165:5) Error: [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError [90m(file:///home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:284:17[90m)[39m
+    at Object.get [90m(file:///home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:330:16[90m)[39m
+    at [90m/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39msrc/components/FileRowsPanel.jsx:130:5
+    at commitHookEffectListMount [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:23189:26[90m)[39m
+    at commitPassiveMountOnFiber [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24970:11[90m)[39m
+    at commitPassiveMountEffects_complete [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24930:9[90m)[39m
+    at commitPassiveMountEffects_begin [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24917:7[90m)[39m
+    at commitPassiveMountEffects [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24905:3[90m)[39m
+    at flushPassiveEffectsImpl [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27078:3[90m)[39m
+    at flushPassiveEffects [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27023:14[90m)[39m {
+  codeFrame: [32m'vi\x1B[33m.\x1B[39m\x1B[34mmock\x1B[39m(\x1B[35mimport\x1B[39m(\x1B[32m"../lib/dataService"\x1B[39m)\x1B[33m,\x1B[39m \x1B[35masync\x1B[39m (importOriginal) \x1B[33m=>\x1B[39m {\n'[39m +
+    [32m'  \x1B[35mconst\x1B[39m actual \x1B[33m=\x1B[39m \x1B[35mawait\x1B[39m \x1B[34mimportOriginal\x1B[39m()\n'[39m +
+    [32m'  \x1B[35mreturn\x1B[39m {\n'[39m +
+    [32m'    \x1B[33m...\x1B[39mactual\x1B[33m,\x1B[39m\n'[39m +
+    [32m'    \x1B[90m// your mocked methods\x1B[39m\n'[39m +
+    [32m'  }\n'[39m +
+    [32m'})'[39m
+}
+The above error occurred in the <FileRowsPanel> component:
+
+    at FileRowsPanel (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/src/components/FileRowsPanel.jsx:36:26)
+    at div
+    at FileDetailPage (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/src/components/FileDetailPage.jsx:9:27)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+stderr | src/components/FileDetailPage.test.jsx > FileDetailPage > T7: clicking the back button in FileRowsPanel restores the summary table
+Error: Uncaught [Error: [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+]
+    at reportException (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:353:9)
+    at invokeEventListeners (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+    at HTMLUnknownElementImpl._dispatch (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
+    at HTMLUnknownElement.dispatchEvent (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+    at Object.invokeGuardedCallbackDev (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:4213:16)
+    at invokeGuardedCallback (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:4277:31)
+    at reportUncaughtErrorInDEV (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:22877:5)
+    at captureCommitPhaseError (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/node_modules/react-dom/cjs/react-dom.development.js:27165:5) Error: [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError [90m(file:///home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:284:17[90m)[39m
+    at Object.get [90m(file:///home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:330:16[90m)[39m
+    at [90m/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39msrc/components/FileRowsPanel.jsx:130:5
+    at commitHookEffectListMount [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:23189:26[90m)[39m
+    at commitPassiveMountOnFiber [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24970:11[90m)[39m
+    at commitPassiveMountEffects_complete [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24930:9[90m)[39m
+    at commitPassiveMountEffects_begin [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24917:7[90m)[39m
+    at commitPassiveMountEffects [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24905:3[90m)[39m
+    at flushPassiveEffectsImpl [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27078:3[90m)[39m
+    at flushPassiveEffects [90m(/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27023:14[90m)[39m {
+  codeFrame: [32m'vi\x1B[33m.\x1B[39m\x1B[34mmock\x1B[39m(\x1B[35mimport\x1B[39m(\x1B[32m"../lib/dataService"\x1B[39m)\x1B[33m,\x1B[39m \x1B[35masync\x1B[39m (importOriginal) \x1B[33m=>\x1B[39m {\n'[39m +
+    [32m'  \x1B[35mconst\x1B[39m actual \x1B[33m=\x1B[39m \x1B[35mawait\x1B[39m \x1B[34mimportOriginal\x1B[39m()\n'[39m +
+    [32m'  \x1B[35mreturn\x1B[39m {\n'[39m +
+    [32m'    \x1B[33m...\x1B[39mactual\x1B[33m,\x1B[39m\n'[39m +
+    [32m'    \x1B[90m// your mocked methods\x1B[39m\n'[39m +
+    [32m'  }\n'[39m +
+    [32m'})'[39m
+}
+The above error occurred in the <FileRowsPanel> component:
+
+    at FileRowsPanel (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/src/components/FileRowsPanel.jsx:36:26)
+    at div
+    at FileDetailPage (/home/hromar/Desktop/projects/kolko-ni-struva-2/react-app/src/components/FileDetailPage.jsx:9:27)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+ ❯ src/components/FileDetailPage.test.jsx (7 tests | 2 failed) 317ms
+   ✓ FileDetailPage > T1: renders no-data message when dims.files is empty 63ms
+   ✓ FileDetailPage > T2: renders no-data message when no file zip_date matches the selected date 10ms
+   ✓ FileDetailPage > T3: renders file name and formatted date for each matching file 95ms
+   ✓ FileDetailPage > T4: renders record counts returned by fetchFileStats 13ms
+   ✓ FileDetailPage > T5: shows loading indicator (ellipsis) before fetchFileStats resolves 10ms
+   × FileDetailPage > T6: clicking a file row renders FileRowsPanel for the selected file 95ms
+     → [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+   × FileDetailPage > T7: clicking the back button in FileRowsPanel restores the summary table 28ms
+     → [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+ ✓ src/components/FileRowDetailModal.test.jsx (7 tests) 568ms
+ ✓ src/components/Report2.test.jsx (8 tests) 536ms
+ ✓ src/App.test.jsx (8 tests) 794ms
+   ✓ App > populates the date selector after fetchDimensions resolves  300ms
+ ✓ src/components/FileRowsPanel.test.jsx (23 tests) 4831ms
+   ✓ FileRowsPanel > T6: clicking next page navigates client-side without additional fetchFileRows calls  595ms
+   ✓ FileRowsPanel > T14: filter reduces page count to reflect only matching rows from all loaded rows  547ms
+   ✓ FileRowsPanel > T15: applying a filter while on page 2 resets the view to page 1  530ms
+   ✓ FileRowsPanel > T20: First page button jumps to page 1 when on page 2  592ms
+   ✓ FileRowsPanel > T22: renders all 2 500 rows returned by fetchAllFileRows for a large file  475ms
+   ✓ FileRowsPanel > T23: renders all 1 000 rows without truncation when totalCount equals SUPABASE_PAGE_SIZE  423ms
+stderr | src/lib/dataService.test.js > fetchDimensions > T4: falls back to all dim_date rows when RPC returns an error
+get_available_dates RPC unavailable; currentDateKey will be null. function not found
+
+stderr | src/lib/dataService.test.js > fetchCategoriesForSettlement (T1) > T1b: falls back to all categories on RPC error
+get_categories_for_settlement RPC unavailable; showing all categories. not found
+
+stderr | src/lib/dataService.test.js > fetchSettlementsForCategory (T2) > T2b: falls back to all settlements on RPC error
+get_settlements_for_category RPC unavailable; showing all settlements. not found
+
+ ✓ src/lib/dataService.test.js (34 tests) 357ms
+ ✓ src/components/RecordDetailModal.test.jsx (9 tests) 406ms
+ ✓ src/components/Report1.test.jsx (4 tests) 339ms
+ ✓ src/components/HomePage.test.jsx (3 tests) 200ms
+ ✓ src/components/Report3.test.jsx (3 tests) 326ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/FileDetailPage.test.jsx > FileDetailPage > T6: clicking a file row renders FileRowsPanel for the selected file
+ FAIL  src/components/FileDetailPage.test.jsx > FileDetailPage > T7: clicking the back button in FileRowsPanel restores the summary table
+Error: [vitest] No "fetchAllFileRows" export is defined on the "../lib/dataService" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi[33m.[39m[34mmock[39m([35mimport[39m([32m"../lib/dataService"[39m)[33m,[39m [35masync[39m (importOriginal) [33m=>[39m {
+  [35mconst[39m actual [33m=[39m [35mawait[39m [34mimportOriginal[39m()
+  [35mreturn[39m {
+    [33m...[39mactual[33m,[39m
+    [90m// your mocked methods[39m
+  }
+})
+
+ ❯ src/components/FileRowsPanel.jsx:130:5
+    128|     setError(null);
+    129| 
+    130|     fetchAllFileRows(fileKey, dims)
+       |     ^
+    131|       .then(({ rows: allRows, totalCount: count }) => {
+    132|         if (cancelled) return;
+ ❯ commitHookEffectListMount node_modules/react-dom/cjs/react-dom.development.js:23189:26
+ ❯ commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom.development.js:24970:11
+ ❯ commitPassiveMountEffects_complete node_modules/react-dom/cjs/react-dom.development.js:24930:9
+ ❯ commitPassiveMountEffects_begin node_modules/react-dom/cjs/react-dom.development.js:24917:7
+ ❯ commitPassiveMountEffects node_modules/react-dom/cjs/react-dom.development.js:24905:3
+ ❯ flushPassiveEffectsImpl node_modules/react-dom/cjs/react-dom.development.js:27078:3
+ ❯ flushPassiveEffects node_modules/react-dom/cjs/react-dom.development.js:27023:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 9 passed (10)
+      Tests  2 failed | 104 passed (106)
+   Start at  07:09:16
+   Duration  11.93s (transform 1.33s, setup 1.97s, collect 4.90s, tests 8.68s, environment 11.49s, prepare 2.44s)
+

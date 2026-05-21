@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<!--
+  user_guide.html: Self-contained interactive user guide for the AI Builder (AIB) framework.
+  Component: AIB User Guide — covers workspace initialization, daily workflow, prompt invocations,
+             Q&A mechanism, workspace instructions, folder structure, concepts, and glossary.
+  No external dependencies required; all CSS and JavaScript are embedded inline.
+  Icons: Feather Icons (MIT License) — embedded as inline SVG.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIB User Guide</title>
+  <style>
+    /*
+     * user_guide.html inline styles: Styles for the AIB User Guide page.
+     * Sections: Base Reset, Layout, Page Header, Accordion, Code Blocks, Footer.
+     */
+
+    /* ============================================================
+       Base Reset & Typography
+       ============================================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #1e2124;
+      background: #f5f6f8;
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       Layout Container
+       ============================================================ */
+    .page-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    /* ============================================================
+       Page Header
+       ============================================================ */
+    .page-header {
+      background: #1a3a5c;
+      color: #ffffff;
+      padding: 36px 32px;
+      border-radius: 8px;
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      font-size: 14px;
+      color: #a9c4e0;
+      max-width: 600px;
+    }
+
+    /* ============================================================
+       Accordion — Item Wrapper
+       ============================================================ */
+    .accordion-item {
+      background: #ffffff;
+      border: 1px solid #dde1e7;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       Accordion — Header Button
+       ============================================================ */
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 16px 20px;
+      background: #ffffff;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a3a5c;
+      transition: background 0.15s ease;
+      gap: 12px;
+    }
+
+    .accordion-header:hover {
+      background: #f0f4f9;
+    }
+
+    .accordion-header:focus-visible {
+      outline: 2px solid #1a3a5c;
+      outline-offset: -2px;
+    }
+
+    /* Section number badge shown before the title */
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #e8f0fb;
+      color: #1a3a5c;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      flex: 1;
+    }
+
+    /* Chevron icon — rotates 180° when section is open */
+    .chevron-icon {
+      flex-shrink: 0;
+      color: #6b7a8d;
+      transition: transform 0.2s ease;
+    }
+
+    .accordion-header[aria-expanded="true"] .chevron-icon {
+      /* Rotate chevron-down to point upward when open */
+      transform: rotate(180deg);
+    }
+
+    /* ============================================================
+       Accordion — Content Panel
+       ============================================================ */
+    .accordion-content {
+      display: none;
+      padding: 4px 20px 24px 20px;
+      border-top: 1px solid #eaecf0;
+      color: #3b4452;
+    }
+
+    /* State class toggled by JavaScript to reveal content */
+    .accordion-content.open {
+      display: block;
+    }
+
+    /* ============================================================
+       Content Styles — Headings, Lists, Paragraphs
+       ============================================================ */
+    .accordion-content h3 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7a8d;
+      margin: 20px 0 8px;
+    }
+
+    .accordion-content p {
+      margin: 12px 0;
+    }
+
+    .accordion-content ul,
+    .accordion-content ol {
+      padding-left: 24px;
+      margin: 10px 0;
+    }
+
+    .accordion-content li {
+      margin: 6px 0;
+    }
+
+    .accordion-content strong {
+      color: #1e2124;
+    }
+
+    /* ============================================================
+       Code Blocks — Inline and Fenced
+       ============================================================ */
+    .accordion-content code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      background: #f0f4f9;
+      color: #1a3a5c;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .accordion-content pre {
+      background: #1e2124;
+      color: #e2e8f0;
+      border-radius: 5px;
+      padding: 16px 18px;
+      margin: 14px 0;
+      overflow-x: auto;
+    }
+
+    .accordion-content pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: 13px;
+    }
+
+    /* ============================================================
+       Folder Tree — Monospace pre block with softer background
+       ============================================================ */
+    .folder-tree {
+      background: #f8f9fb;
+      border: 1px solid #dde1e7;
+      border-radius: 5px;
+      padding: 16px 18px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #2d3748;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+
+    /* ============================================================
+       Artifacts Table
+       ============================================================ */
+    .artifacts-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 14px 0;
+    }
+
+    .artifacts-table th {
+      background: #f0f4f9;
+      color: #1a3a5c;
+      text-align: left;
+      padding: 8px 12px;
+      border: 1px solid #dde1e7;
+      font-weight: 700;
+    }
+
+    .artifacts-table td {
+      padding: 8px 12px;
+      border: 1px solid #dde1e7;
+      vertical-align: top;
+    }
+
+    .artifacts-table tr:nth-child(even) td {
+      background: #f8f9fb;
+    }
+
+    /* ============================================================
+       Glossary Term List
+       ============================================================ */
+    .glossary-list {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0;
+    }
+
+    .glossary-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .glossary-list li:last-child {
+      border-bottom: none;
+    }
+
+    .glossary-term {
+      font-weight: 700;
+      color: #1a3a5c;
+    }
+
+    /* ============================================================
+       Page Footer
+       ============================================================ */
+    .page-footer {
+      text-align: center;
+      font-size: 12px;
+      color: #9aa3af;
+      margin-top: 40px;
+    }
+
+    /* ============================================================
+       Callout Box — used for notes and tips
+       ============================================================ */
+    .callout {
+      background: #edf5ff;
+      border-left: 3px solid #1a3a5c;
+      border-radius: 0 4px 4px 0;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+
+    .callout strong {
+      color: #1a3a5c;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-container">
+
+  <!-- ============================================================
+       Page Header — Title and subtitle
+       ============================================================ -->
+  <header class="page-header">
+    <h1>AI Builder (AIB) — User Guide</h1>
+    <p>A minimal, model-agnostic framework for specification-driven development workflows. All sections expand on click — no network connection required.</p>
+  </header>
+
+  <!-- ============================================================
+       Main Content — Accordion Sections 1–11
+       ============================================================ -->
+  <main id="accordion-root" aria-label="AIB User Guide sections">
+
+    <!-- ============================================================
+         Section 1 — Introduction
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-1-content">
+        <span class="section-badge" aria-hidden="true">1</span>
+        <span class="section-title">Introduction</span>
+        <!-- Chevron-down icon sourced from Feather Icons (MIT License) -->
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-1-content" role="region" aria-labelledby="section-1-header">
+        <p>AI Builder (AIB) is a minimal but powerful framework for AI specification-based development. AIB serves software development, documentation creation, data processing, and all other activities achievable with AI assistance.</p>
+
+        <h3>Objectives</h3>
+        <ul>
+          <li>Analyse user input and generate <strong>analysis</strong> and <strong>plan</strong> Markdown files.</li>
+          <li>Generate questions to the user for aspects that could lead to different implementation approaches.</li>
+          <li>Write a detailed plan for action to be performed during the implementation phase.</li>
+          <li>Write implementation details when execution is performed.</li>
+        </ul>
+
+        <h3>Core Philosophy</h3>
+        <ul>
+          <li><strong>File-first:</strong> All state, configuration, and artifacts are Markdown files in the repository — no database, cloud service, or runtime state.</li>
+          <li><strong>Fail-closed:</strong> When a required resource is missing or invalid, AIB halts with an explicit error rather than guessing.</li>
+          <li><strong>Determinism:</strong> Workflows produce the same output given the same input — every prompt action is reproducible and verifiable.</li>
+          <li><strong>Model-agnostic:</strong> Works in VS Code with GitHub Copilot, Claude Code, Cursor, and any other AI coding interface.</li>
+        </ul>
+
+        <div class="callout">
+          <strong>Framework location:</strong> All reusable AIB assets live in <code>.aib_brain/</code>. All workspace-specific artifacts live in <code>.aib_memory/</code>.
+        </div>
+      </div>
+    </div><!-- end Section 1 -->
+
+    <!-- ============================================================
+         Section 2 — Prerequisites
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-2-content">
+        <span class="section-badge" aria-hidden="true">2</span>
+        <span class="section-title">Prerequisites</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-2-content" role="region" aria-labelledby="section-2-header">
+        <ul>
+          <li><strong>Python 3.10+</strong> available in your terminal (<code>python --version</code> to verify).</li>
+          <li><strong>Terminal</strong> open at the repository root (where <code>.aib_brain/</code> and <code>.aib_memory/</code> are located).</li>
+          <li>An <strong>AI coding interface</strong> such as VS Code with GitHub Copilot, Claude Code, or Cursor.</li>
+        </ul>
+
+        <div class="callout">
+          <strong>No additional libraries required.</strong> All AIB tool scripts use only the Python 3.10+ standard library.
+        </div>
+      </div>
+    </div><!-- end Section 2 -->
+
+    <!-- ============================================================
+         Section 3 — Quick Start
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-3-content">
+        <span class="section-badge" aria-hidden="true">3</span>
+        <span class="section-title">Quick Start</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-3-content" role="region" aria-labelledby="section-3-header">
+        <p>Launch the interactive menu from your terminal at the repository root:</p>
+
+        <h3>Windows</h3>
+        <pre><code>.aib_brain\run.bat</code></pre>
+
+        <h3>Linux / macOS</h3>
+        <pre><code>sh .aib_brain/run.sh</code></pre>
+
+        <h3>What the menu shows</h3>
+        <ul>
+          <li>A <strong>state-aware guidance block</strong> with your next recommended action based on the current workspace state.</li>
+          <li>When an active request exists, a <strong>"Close current request"</strong> action appears automatically.</li>
+          <li>Prompt invocation instructions for <code>aib-analyze.md</code>, <code>aib-implement.md</code>, and <code>aib-refresh-context.md</code>.</li>
+        </ul>
+
+        <h3>Workspace states</h3>
+        <ul>
+          <li><code>idle</code> — No active request; <code>input.md</code> is empty.</li>
+          <li><code>input_ready</code> — <code>input.md</code> has content; no active request yet.</li>
+          <li><code>request_incomplete</code> — Active request exists; analysis not yet run.</li>
+          <li><code>questions_pending</code> — Q-blocks in <code>input.md</code> await answers.</li>
+          <li><code>implementation_ready</code> — Plan is ready; implement can be run.</li>
+          <li><code>amendment_pending</code> — New input detected on an existing active request.</li>
+          <li><code>unknown</code> — Workspace in an unrecognised state.</li>
+        </ul>
+      </div>
+    </div><!-- end Section 3 -->
+
+    <!-- ============================================================
+         Section 4 — Daily Flow
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-4-content">
+        <span class="section-badge" aria-hidden="true">4</span>
+        <span class="section-title">Daily Flow</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-4-content" role="region" aria-labelledby="section-4-header">
+        <ol>
+          <li>
+            <strong>Write your intent</strong> into the <code>## Input</code> section of <code>.aib_memory/input.md</code>.
+          </li>
+          <li>
+            <strong>Run analysis</strong> in AI chat:
+            <pre><code>Execute .aib_brain/prompts/aib-analyze.md</code></pre>
+            <em>(Optional but highly recommended)</em> — auto-creates a request, generates an analysis artifact and a plan, and asks clarifying questions if needed.
+          </li>
+          <li>
+            <strong>Run implement</strong> in AI chat:
+            <pre><code>Execute .aib_brain/prompts/aib-implement.md</code></pre>
+            If no active request exists, the prompt auto-creates one from <code>input.md</code> and proceeds. The request is closed automatically when implementation completes.
+          </li>
+        </ol>
+      </div>
+    </div><!-- end Section 4 -->
+
+    <!-- ============================================================
+         Section 5 — Prompt Invocations
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-5-content">
+        <span class="section-badge" aria-hidden="true">5</span>
+        <span class="section-title">Prompt Invocations</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-5-content" role="region" aria-labelledby="section-5-header">
+        <p>Paste any of the following commands directly into your AI chat interface:</p>
+
+        <h3>Analyze (plan &amp; research)</h3>
+        <pre><code>Execute .aib_brain/prompts/aib-analyze.md</code></pre>
+        <p>Reads <code>input.md</code>, auto-creates a request, generates <code>analysis-&lt;id&gt;.md</code> and <code>plan-&lt;id&gt;.md</code>, and produces Q-blocks in <code>input.md</code> when decision points exist.</p>
+
+        <h3>Implement (execute scope)</h3>
+        <pre><code>Execute .aib_brain/prompts/aib-implement.md</code></pre>
+        <p>Reads <code>plan-&lt;id&gt;.md</code>, applies all code and documentation changes, creates/appends <code>implementation.md</code>, refreshes <code>context.md</code>, and auto-closes the request.</p>
+
+        <h3>Refresh Context</h3>
+        <pre><code>Execute .aib_brain/prompts/aib-refresh-context.md</code></pre>
+        <p>Rebuilds <code>.aib_memory/context.md</code> from the current workspace state. Can be run at any time without an active request.</p>
+      </div>
+    </div><!-- end Section 5 -->
+
+    <!-- ============================================================
+         Section 6 — Use Cases
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-6-content">
+        <span class="section-badge" aria-hidden="true">6</span>
+        <span class="section-title">Use Cases</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-6-content" role="region" aria-labelledby="section-6-header">
+        <h3>Full analysis → implement flow (recommended)</h3>
+        <ol>
+          <li>Write your request into <code>input.md → ## Input</code>.</li>
+          <li>Run <code>aib-analyze.md</code> — auto-creates a request, generates <code>analysis-&lt;id&gt;.md</code> and <code>plan-&lt;id&gt;.md</code>.</li>
+          <li>Review <code>plan-&lt;id&gt;.md</code> and adjust if needed. Answer any Q-blocks in <code>input.md</code> if generated.</li>
+          <li>Run <code>aib-implement.md</code> — executes scope and closes request automatically.</li>
+        </ol>
+
+        <h3>Direct implement (no formal analysis)</h3>
+        <ol>
+          <li>Write your request into <code>input.md → ## Input</code>.</li>
+          <li>Run <code>aib-implement.md</code> — auto-creates a request from input and implements directly.</li>
+        </ol>
+
+        <h3>Refresh workspace context</h3>
+        <ul>
+          <li>Run <code>aib-refresh-context.md</code> at any time (no active request required) to update <code>.aib_memory/context.md</code>.</li>
+        </ul>
+      </div>
+    </div><!-- end Section 6 -->
+
+    <!-- ============================================================
+         Section 7 — Questions and Answers
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-7-content">
+        <span class="section-badge" aria-hidden="true">7</span>
+        <span class="section-title">Questions and Answers</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-7-content" role="region" aria-labelledby="section-7-header">
+        <p>When <code>aib-analyze.md</code> identifies decision points with multiple valid implementation choices where the preferred option has a materially different impact on the codebase, it generates a <code>## Questions</code> section in <code>input.md</code>.</p>
+
+        <h3>How it works</h3>
+        <ol>
+          <li>After analysis runs, open <code>.aib_memory/input.md</code>. If questions were generated, a <code>## Questions</code> section appears at the end of the file.</li>
+          <li>Each question includes:
+            <ul>
+              <li>The question text.</li>
+              <li>A <code>&gt; <strong>Why this matters:</strong></code> line explaining the implementation impact.</li>
+              <li>Mutually exclusive options with checkboxes; the first option is marked <em>(recommended)</em>.</li>
+              <li>A <code>&gt; Answer:</code> field for free-text responses.</li>
+            </ul>
+          </li>
+          <li>Answer questions by checking <code>[x]</code> next to your chosen option, or writing a free-text answer in the <code>&gt; Answer:</code> field.</li>
+          <li>If you leave a question unanswered, the Answer Application Sub-flow halts with an error message and leaves <code>input.md</code> unchanged. <strong>All Q-blocks must be answered before re-running analysis.</strong></li>
+          <li>Re-run <code>aib-analyze.md</code> — reads your answers, applies them to the relevant <code>plan.md</code> sections, and clears the <code>## Questions</code> section from <code>input.md</code>.</li>
+        </ol>
+
+        <div class="callout">
+          <strong>One Q&amp;A cycle per request:</strong> After all questions are answered and analysis re-runs, no new questions are generated (all ambiguities are resolved). The <code>## Questions</code> section is ephemeral — it is fully cleared after each Q&amp;A cycle.
+        </div>
+      </div>
+    </div><!-- end Section 7 -->
+
+    <!-- ============================================================
+         Section 8 — Workspace Instructions
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-8-content">
+        <span class="section-badge" aria-hidden="true">8</span>
+        <span class="section-title">Workspace Instructions</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-8-content" role="region" aria-labelledby="section-8-header">
+        <p><code>.aib_memory/instructions.md</code> is a persistent directives file read by <strong>every AIB prompt</strong> before it executes.</p>
+
+        <h3>Purpose</h3>
+        <p>Write any workspace-specific rules here — coding conventions, naming rules, always/never behaviors, or references to additional files AIB should read. If absent or empty, all prompts continue normally.</p>
+
+        <h3>How to use it</h3>
+        <ul>
+          <li>Open <code>.aib_memory/instructions.md</code> in any text editor.</li>
+          <li>Add free-form Markdown directives. No schema enforcement applies.</li>
+          <li>Directives take effect on the <strong>next</strong> prompt invocation — no restart required.</li>
+          <li>You may list additional file paths that AIB prompts should read as supplementary context.</li>
+        </ul>
+
+        <div class="callout">
+          <strong>Do not store secrets, credentials, or PII in this file.</strong> It is VCS-tracked and visible to anyone with repository access.
+        </div>
+      </div>
+    </div><!-- end Section 8 -->
+
+    <!-- ============================================================
+         Section 9 — Folder Structure
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-9-content">
+        <span class="section-badge" aria-hidden="true">9</span>
+        <span class="section-title">Folder Structure</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-9-content" role="region" aria-labelledby="section-9-header">
+        <p>The workspace uses two top-level folders to separate framework assets from workspace-specific artifacts:</p>
+
+        <pre class="folder-tree">.aib_brain/          ← Reusable framework assets (never modified by tool scripts)
+  conventions/       ← Convention files defining document structure and quality gates
+  prompts/           ← Prompt files invoked in your AI chat interface
+  tools/             ← Python tool scripts for deterministic AIB actions
+  README.md          ← Quick-start overview and workspace guide
+  user_guide.html    ← Self-contained interactive user guide (browser-viewable)
+  run.bat            ← Windows launcher for the interactive menu
+  run.sh             ← Linux/macOS launcher for the interactive menu
+  vM.m.p             ← SemVer marker file (e.g. v1.3.0)
+
+.aib_memory/         ← Workspace-specific artifacts (project-scoped)
+  archives/          ← Archived snapshots of previous .aib_memory/ states
+  attachments/       ← Staging folder for supplementary input files
+  logs/              ← Tool execution and action logs
+  requests/          ← Closed request subfolders (plan, analysis, implementation)
+  context.md         ← Auto-generated product knowledge document
+  input.md           ← Primary user-to-agent communication file
+  instructions.md    ← Persistent workspace-level behavioral directives
+  requests_register.md ← Register of all requests with lifecycle state
+  vM.m.p             ← Workspace SemVer marker (matched to brain version)</pre>
+      </div>
+    </div><!-- end Section 9 -->
+
+    <!-- ============================================================
+         Section 10 — Request Folder Artifacts
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-10-content">
+        <span class="section-badge" aria-hidden="true">10</span>
+        <span class="section-title">Request Folder Artifacts</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-10-content" role="region" aria-labelledby="section-10-header">
+        <p>Each request has an ID in the format <code>R-YYYYMMDD-HHmi</code>. While a request is <strong>Active</strong>, its artifacts live at <code>.aib_memory/</code> root. On close, they are moved to the request subfolder under <code>.aib_memory/requests/</code>.</p>
+
+        <table class="artifacts-table">
+          <thead>
+            <tr>
+              <th>Artifact</th>
+              <th>Created by</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>plan-&lt;id&gt;.md</code></td>
+              <td><code>aib-analyze.md</code></td>
+              <td>Request plan and decisions. Active copy lives at <code>.aib_memory/plan-&lt;id&gt;.md</code>; moved to request subfolder after implementation.</td>
+            </tr>
+            <tr>
+              <td><code>analysis-&lt;id&gt;.md</code></td>
+              <td><code>aib-analyze.md</code></td>
+              <td>Reasoning artifact with 5 mandatory sections: Overview, Files Read, Input Interpretation, Research Results, Implementation Alternatives. Not read by <code>implement</code>.</td>
+            </tr>
+            <tr>
+              <td><code>implementation.md</code></td>
+              <td><code>aib-implement.md</code></td>
+              <td>Append-only implementation log. Created from scratch; a new entry is appended on each implementation run.</td>
+            </tr>
+            <tr>
+              <td><code>inputs/input-archive-*.md</code></td>
+              <td><code>aib-analyze.md</code></td>
+              <td>Archived <code>input.md</code> snapshot per analysis run. Never read by any AIB prompt after archiving.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- end Section 10 -->
+
+    <!-- ============================================================
+         Section 11 — Concepts / Glossary
+         ============================================================ -->
+    <div class="accordion-item">
+      <button class="accordion-header" aria-expanded="false" aria-controls="section-11-content">
+        <span class="section-badge" aria-hidden="true">11</span>
+        <span class="section-title">Concepts / Glossary</span>
+        <svg class="chevron-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="accordion-content" id="section-11-content" role="region" aria-labelledby="section-11-header">
+        <ul class="glossary-list">
+          <li><span class="glossary-term">ADR</span> — Architecture Decision Record: a document capturing a significant architectural choice, its rationale, and consequences.</li>
+          <li><span class="glossary-term">AI Builder</span> — Minimal, model-agnostic framework for specification-driven development in a repository workspace. Abbreviated AIB.</li>
+          <li><span class="glossary-term">AIB</span> — Abbreviation for AI Builder.</li>
+          <li><span class="glossary-term">Analysis</span> — A reasoning artifact (<code>analysis-&lt;request_id&gt;.md</code>) generated per request; also updates <code>plan-&lt;request_id&gt;.md</code> with Plan and Decisions sections.</li>
+          <li><span class="glossary-term">Auto-close</span> — Behavior whereby <code>aib-implement.md</code> invokes <code>close-request.py</code> automatically after successful implementation.</li>
+          <li><span class="glossary-term">Auto-request</span> — Behavior of <code>aib-analyze.md</code> whereby, when no Active request exists and <code>input.md</code> is non-empty, it auto-creates a request and generates <code>plan.md</code> from <code>input.md</code> content.</li>
+          <li><span class="glossary-term">Brain Folder</span> — Folder (<code>.aib_brain/</code>) containing reusable AIB assets: prompts, conventions, and tool scripts.</li>
+          <li><span class="glossary-term">CI</span> — Continuous Integration: automated pipeline that runs on pull request events.</li>
+          <li><span class="glossary-term">Convention File</span> — A file in <code>.aib_brain/conventions/</code> that defines the required structure and validation rules for a specific product doc or coding standard.</li>
+          <li><span class="glossary-term">Curated Change Log</span> — <code>logs/next_version_changes.md</code>: append-only Markdown bullet list maintained by the AI agent during implementation; preferred source of <code>Changes:</code> bullets in the next per-version release log; reset to empty by CI after incorporation.</li>
+          <li><span class="glossary-term">FR</span> — Functional Requirement.</li>
+          <li><span class="glossary-term">Implementation Log</span> — Request-scoped on-demand record of changes, tests, and outcomes (<code>implementation.md</code>); created from scratch by <code>aib-implement.md</code>.</li>
+          <li><span class="glossary-term">Input Archive</span> — File written by <code>aib-analyze.md</code> to <code>&lt;request-folder&gt;/inputs/input-archive-&lt;YYYY-MM-DD_HH-MI-SS&gt;.md</code> preserving the original <code>input.md</code> content for audit; MUST NOT be read by any prompt.</li>
+          <li><span class="glossary-term">input.md</span> — Ephemeral primary user-agent communication channel. Seeded by <code>initialize.py</code>; written by the developer; read and processed by <code>aib-analyze.md</code>; reset to seed template after processing.</li>
+          <li><span class="glossary-term">instructions.md</span> — Persistent workspace-level behavioral directives file at <code>.aib_memory/instructions.md</code>. Read by every AIB prompt as the first step before executing its main logic. If absent or empty, prompts continue normally.</li>
+          <li><span class="glossary-term">Memory Folder</span> — Folder (<code>.aib_memory/</code>) containing workspace-specific artifacts: requests, registers, <code>context.md</code>, and <code>input.md</code>.</li>
+          <li><span class="glossary-term">NFR</span> — Non-Functional Requirement.</li>
+          <li><span class="glossary-term">PII</span> — Personally Identifiable Information.</li>
+          <li><span class="glossary-term">Product Doc</span> — A convention-governed documentation file (e.g., <code>context.md</code>); editable by automation when the active request authorises the change.</li>
+          <li><span class="glossary-term">Prompt Action</span> — A <code>.aib_brain/prompts/aib-*.md</code> file that defines the instructions an AI agent executes to produce a specific AIB artifact. Invoked directly in an AI coding interface; model-agnostic.</li>
+          <li><span class="glossary-term">Request</span> — Tracked unit of work with a stable request identifier (<code>R-YYYYMMDD-HHmi</code>) and lifecycle state (<code>Active</code> or <code>Closed</code>).</li>
+          <li><span class="glossary-term">SemVer</span> — Semantic Versioning, following the pattern MAJOR.MINOR.PATCH.</li>
+          <li><span class="glossary-term">SemVer Marker File</span> — A single empty file in <code>.aib_brain/</code> whose filename encodes <code>vMAJOR.MINOR.PATCH</code>; represents the active product version.</li>
+          <li><span class="glossary-term">SLO</span> — Service Level Objective.</li>
+          <li><span class="glossary-term">Tool Script</span> — A Python script in <code>.aib_brain/tools/</code> implementing a deterministic AIB action.</li>
+          <li><span class="glossary-term">User Guide</span> — Self-contained HTML file at <code>.aib_brain/user_guide.html</code>; browser-viewable reference documentation for AIB users covering the full AIB workflow, prompt invocations, Q&amp;A mechanism, workspace structure, and glossary. Requires no network connectivity to open.</li>
+          <li><span class="glossary-term">VCS</span> — Version Control System.</li>
+          <li><span class="glossary-term">Versioned Archive</span> — Zip file created by CI per version bump, stored in <code>versions/aib_brain_vX.Y.Z.zip</code>; committed to VCS; used for AIB installation.</li>
+          <li><span class="glossary-term">Workspace</span> — The repository root containing both the AIB brain folder and memory folder plus any product-specific code and configuration.</li>
+        </ul>
+      </div>
+    </div><!-- end Section 11 -->
+
+  </main><!-- end accordion-root -->
+
+  <!-- ============================================================
+       Page Footer
+       ============================================================ -->
+  <footer class="page-footer">
+    <p>AIB User Guide &mdash; Self-contained static file. Open in any modern browser. No network connection required.</p>
+  </footer>
+
+</div><!-- end page-container -->
+
+<script>
+  /*
+   * Accordion toggle logic for AIB User Guide.
+   * Attaches click handlers to every .accordion-header element.
+   * Each click toggles the .open class on the adjacent .accordion-content
+   * sibling and updates the aria-expanded attribute accordingly.
+   * No framework dependency — plain JavaScript only.
+   */
+  (function () {
+    'use strict';
+
+    /**
+     * Initialise accordion behaviour for all header buttons on the page.
+     * Called once after DOM content is loaded.
+     */
+    function initAccordion() {
+      // Retrieve every accordion header button in document order
+      var headers = document.querySelectorAll('.accordion-header');
+
+      headers.forEach(function (header) {
+        header.addEventListener('click', function () {
+          // Locate the content panel immediately following the button
+          var contentId = header.getAttribute('aria-controls');
+          var content = document.getElementById(contentId);
+
+          if (!content) {
+            // Guard: skip if the paired content panel is missing
+            return;
+          }
+
+          // Determine the new open/closed state by checking current ARIA value
+          var isCurrentlyExpanded = header.getAttribute('aria-expanded') === 'true';
+          var willOpen = !isCurrentlyExpanded;
+
+          // Toggle CSS class that controls display of the content panel
+          if (willOpen) {
+            content.classList.add('open');
+          } else {
+            content.classList.remove('open');
+          }
+
+          // Keep aria-expanded in sync with the visual state
+          header.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        });
+      });
+    }
+
+    // Run after the DOM is ready; document is already parsed at this point
+    // because the script tag is the last child of <body>
+    initAccordion();
+  }());
+</script>
+
+</body>
+</html>
