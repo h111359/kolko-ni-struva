@@ -107,14 +107,15 @@ def main() -> None:
                 "Files were not archived — consider running aib-analyze.md before closing."
             )
 
-        # Reset input.md to the seed template so the Active request line reads
-        # "No active request" after the request is closed. Skip silently if the
+        # Reset input.md to the seed template so the Status section reads
+        # "No active request" and State: idle after the request is closed. Skip silently if the
         # file does not exist (e.g. workspace not yet initialized).
         input_file = workspace / ".aib_memory" / "input.md"
         if input_file.exists():
             input_seed = (
-                "## Active request\n"
-                "No active request\n\n"
+                "## Status\n"
+                "No active request\n"
+                "State: idle\n\n"
                 "## Options\n"
                 "- Minimum questions: 0\n\n"
                 "## Input\n\n"

@@ -20,7 +20,7 @@ The **Analysis document** is a **reasoning and knowledge-capture artifact** only
 This convention applies only to analysis artifacts for a single request:
 
 *   Target files: `analysis.md`
-*   Location: `.aib_memory/requests/<request-folder>/`
+*   Location: `.aib_memory/` (active phase) or `.aib_memory/requests/<request-folder>/` (archived phase)
 *   Out of scope: plan, questionnaire, and implementation records (defined by their own conventions or removed)
 
 Normative keywords **MUST**, **MUST NOT**, **SHALL**, **SHOULD**, and **MAY** are interpreted per BCP 14 (RFC 2119 / RFC 8174).
@@ -52,7 +52,7 @@ Each analysis file **must** contain the following sections in the exact order:
 2. **Files Read During This Analysis Run** **[REQ]**
 3. **Input Interpretation** **[REQ]**
 4. **Research Results** **[REQ]**
-5. **Implementation Alternatives** **[REQ]**
+5. **Decision Register** **[REQ]**
 
 ***
 
@@ -114,8 +114,6 @@ This section is the primary AI reasoning artifact for the request. It documents 
 
 **Rules:**
 
-- Summarize findings and implications; do not embed external links.
-
 - MUST NOT be empty or contain only stub notices.
 
 - `implement` MUST NOT read or act on this section.
@@ -123,13 +121,13 @@ This section is the primary AI reasoning artifact for the request. It documents 
 
 ***
 
-### 4.5 Implementation Alternatives **[REQ]**
+### 4.5 Decision Register **[REQ]**
 
-This section is the primary driver for Q-block generation. It MUST be completed before any Q-block is written.
+This section captures the pivotal decisions that shape the solution to be implemented. Each entry is called a "Decision Point." A decision point is either resolved autonomously by the AI agent based on collected context, raised as a question for the user, or already resolved by the user.
 
 **Mandatory content:**
 
-For each implementation decision fork identified in the request scope, define a named decision block containing:
+For each Decision Point identified in the request scope, define a named decision block containing:
 
   - Identification of the specific task or step where this decision applies, plus an explanation of why the alternatives exist.
 
@@ -138,19 +136,26 @@ For each implementation decision fork identified in the request scope, define a 
     - Key trade-offs (benefits and drawbacks).
     - Expected codebase impact.
 
-  - The resolution: tag and rationale per the classification rules in `aib-analyze.md` section 7.3.2.
+  - Resolution classification:
+    - Tag `resolve-autonomously` — ONLY when the developer's own `input.md ## Input` text OR a named, specific section of a workspace convention file explicitly and unambiguously resolves the decision point. The rationale MUST quote or cite the exact source text and file path. External benchmarking, industry best practices, and AI judgment are NOT valid justifications for this tag.
     - Tag `ask` — a Q-block MUST be raised for developer input. The AI MUST NOT express a preference or steer the developer toward any option. Present choices neutrally.
-    - Tag `resolve-autonomously` — ONLY when the developer's own `input.md ## Input` text OR a named, specific section of a workspace convention file explicitly and unambiguously resolves the fork. The rationale MUST quote or cite the exact source text and file path. External benchmarking, industry best practices, and AI judgment are NOT valid justifications for this tag.
+    - Tag `resolved-by-user` - for the decision points for which the user has already taken a decision
 
-- A `### Decision Points` section using a heading/sub-heading list — one `#### Fork: <name>` level-4 heading per fork, each containing bullet list items for Tag and Rationale/Resolution.
+  - Resolution outcome: After resolution, retain only the chosen alternative. Discard non-chosen alternatives from the final document.
 
-- If no decision forks are identified, include a single entry documenting that fact.
+- A `### Decision Points` section using a heading/sub-heading list — one `#### Decision Point: <name>` level-4 heading per decision point, each containing bullet list items for Tag and Rationale/Resolution.
+
+- If no decision points are identified, include a single entry documenting that fact.
 
 **Rules:**
 
-- At least one named alternative MUST be documented per decision fork.
+- At least one alternative MUST be documented per decision point.
 
 - When in doubt whether to tag `ask` or `resolve-autonomously`, always tag `ask`.
+
+- `resolve-autonomously` MUST cite a concrete source (exact source text and file path).
+
+- Update resolution after human answer is received.
 
 - MUST NOT be empty.
 
@@ -158,41 +163,24 @@ For each implementation decision fork identified in the request scope, define a 
 
 ***
 
-## 5. Maintenance Rules (Normative)
-
-*   Idempotence: same memory state and same request should converge to same analysis intent.
-*   Change drivers: update analysis when scope changes, new evidence appears, or risk state changes.
-*   Closure: once a request is closed in `requests_register.md`, analysis remains unchanged except factual corrections.
-
-***
-
-## 6. Formatting Requirements
+## 5. Formatting Requirements
 
 *   All headings must use `##` or `###` consistent with this convention.
 *   Bullet lists must use `- `.
+*   When listing multiple consecutive items, present them as a list rather than a single long sentence: use a bulleted list when order does not matter and an enumerated (numbered) list when order matters. Apply this rule whenever listing two or more discrete items. Ensure list items use parallel phrasing (same grammatical form) and consistent punctuation; keep items concise. If a list item contains enumerated parts, place them in a sublist.
 *   Make a list of sub-bullets if the bullet text is split by symbols like `;`
 *   In case of enumerated parts in a single list item - position them in a sublist
 *   Tables must use standard GitHub Markdown table syntax.
 *   No HTML is allowed.
-*   No images, diagrams, embeds, or external hyperlinks.
 *   The document must be deterministic (same inputs -> same output intent).
 *   Separate chapters, bullets with empty lines for readability
+*   
 
 ***
 
-## 7. Determinism Rules (Normative)
-
-*   Given the same memory state and request input, analysis output intent must be identical.
-*   AI must not guess beyond request scope.
-*   If request ambiguity exists that cannot be resolved internally, create a `Q<nnn>` question block in `plan-<request_id>.md` -> `## Decisions` instead of making assumptions.
-
-***
-
-## 8. Prohibited Content
+## 6. Prohibited Content
 
 *   Secrets, private keys, credentials, tokens, or sensitive PII.
-*   External hyperlinks.
-*   Embedded images or diagrams.
 *   In-file version/author/status metadata headers.
 
 ***

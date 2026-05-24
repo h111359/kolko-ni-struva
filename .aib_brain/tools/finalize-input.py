@@ -32,8 +32,9 @@ from common import (
 # This is the canonical reset state written to input.md after finalization.
 # "No active request" is replaced with the real request ID + title at runtime.
 _SEED_TEMPLATE = (
-    "## Active request\n"
-    "No active request\n\n"
+    "## Status\n"
+    "No active request\n"
+    "State: analysis_ready\n\n"
     "## Options\n"
     "- Minimum questions: 0\n\n"
     "## Input\n\n"
@@ -89,10 +90,10 @@ def _is_stub_equivalent(content: str) -> bool:
     """Return True when content is functionally identical to the seed template.
 
     A stub-equivalent input.md contains no meaningful developer input — only the
-    seed structure is present. The active request line value (request ID or
-    "No active request") is intentionally ignored during comparison so that an
-    already-reset input.md (which carries the request ID) is treated the same as
-    a freshly seeded input.md (which carries "No active request").
+    seed structure is present. The status section values (request ID or
+    "No active request", and the State: line) are intentionally ignored during
+    comparison so that an already-reset input.md (which carries the request ID
+    and a state value) is treated the same as a freshly seeded input.md.
 
     When True, the archive step is skipped because there is nothing worth preserving.
 
@@ -100,19 +101,20 @@ def _is_stub_equivalent(content: str) -> bool:
         content: Current content of input.md.
 
     Returns:
-        True when the content, after normalisation and active-request-line
+        True when the content, after normalisation and status-section
         canonicalisation, matches the seed template.
     """
-    # Regex to match "## Active request" heading followed by the value line.
-    _active_req_re = re.compile(r"(## Active request\n)[^\n]*", re.MULTILINE)
-    _placeholder = "## Active request\n_PLACEHOLDER_"
+    # Regex to match "## Status" heading followed by the two variable lines
+    # (request ID/title line and State: value line).
+    _status_re = re.compile(r"(## Status\n)[^\n]*\n[^\n]*", re.MULTILINE)
+    _placeholder = "## Status\n_PLACEHOLDER_\n_STATE_PLACEHOLDER_"
 
     def _canonicalise(text: str) -> str:
-        """Normalise and replace the active-request value with a fixed placeholder."""
+        """Normalise and replace the status section values with fixed placeholders."""
         normalised = _normalize(text)
-        # Replace "## Active request\n<any value>" with a neutral placeholder so
-        # the request ID value does not affect structural comparison.
-        return _active_req_re.sub(_placeholder, normalised, count=1)
+        # Replace "## Status\n<request-line>\n<state-line>" with neutral placeholders
+        # so neither the request ID value nor the State value affects structural comparison.
+        return _status_re.sub(_placeholder, normalised, count=1)
 
     return _canonicalise(content) == _canonicalise(_SEED_TEMPLATE)
 

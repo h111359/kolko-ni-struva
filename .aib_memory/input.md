@@ -1,5 +1,6 @@
-## Active request
-R-20260518-2256 — Fix dim_settlement duplicate keys and EKATTE normalization
+## Status
+No active request
+State: idle
 
 ## Options
 - Minimum questions: 0

@@ -5,46 +5,55 @@ Execute active request scope, update the documentation and create request-scoped
 
 ## Process
 
-1. Execute instructions from "Input resolution" section
-2. Apply code/documentation changes required by request scope.
-3. Create/update tests where applicable.
-4. Run validation/tests and capture results.
-5. Resolve any test failures
-6. Continue until done criteria are met or blockers are explicitly recorded.
-7. Execute `.aib_brain\prompts\aib-refresh-context.md`
-8. After completing all implementation work and the context update, move the active-request artifacts to the request subfolder and then auto-close the request by invoking (in this exact order):
-  ```
-  python .aib_brain/tools/move-request-artifacts.py --workspace .
-  python .aib_brain/tools/close-request.py --workspace .
-  ```
-  The move step MUST be executed before `close-request.py`. Only invoke these scripts after the implementation is confirmed successful (no unresolved test failures or blockers).
-
-
-9. Generate `implementation.md` from scratch in the active request folder if it does not exist; append a new Entry if it already exists. Follow the exact Entry Block Format defined in `.aib_brain/conventions/implementation-convention.md`. 
-
-- MUST confirm at the very end of the conversation with the text "--- I am done with the implementation ---" that all your activities are finished
-
-## Input resolution (MUST):
-
 Step 1:  Read `.aib_memory/instructions.md`. If the file exists and is non-empty, treat its content as persistent workspace-level instructions that MUST be observed throughout this prompt's execution. If the file is absent or empty, proceed normally.
 
 Step 2: Read `.aib_memory/requests_register.md` and check for exactly one row with `state = Active`.
-  - If zero Active rows are found: **Auto-Analysis Branch** — trigger the `aib-analyze.md` flow (read and execute `.aib_brain/prompts/aib-analyze.md`), then continue with implementation once analysis completes and a new Active request exists. Do NOT ask the user for permission or confirmation before creating the request or running analysis; proceed autonomously.
+  - If zero Active rows are found: output the message **"ERROR: No active request is found. Execution halted."** and HALT.
   - If more than one Active row is found: output the message **"ERROR: Register inconsistency — multiple Active requests found. Execution halted. Fix requests_register.md before running implement."** Do NOT proceed to any subsequent step. Do NOT write any output files.
   - If exactly one Active row is found: continue with input resolution below.
 
 Step 3:  Resolve active request from `.aib_memory/requests_register.md` unless explicit ID is provided.
 
-Step 4: Use `plan-<request_id>.md` as the authoritative source of truth for implementation scope, plan, and all context. Read it from `.aib_memory/plan-<request_id>.md` (the active location while the request is open, where `<request_id>` is the active request ID resolved from the register). Analysis, questionnaire, and plan iteration artifacts are NOT read during implementation.
+Step 4: Read `.aib_memory/context.md`. If the file is absent or empty, continue normally with no error; otherwise treat its content as the unified workspace product context for this implementation run.
 
-Step 5: Read `.aib_memory/context.md`. If the file is absent or empty, continue normally with no error; otherwise treat its content as the unified workspace product context for this implementation run.
+Step 5: Read `.aib_memory/plan-<request_id>.md` (the active location while the request is open, where `<request_id>` is the active request ID resolved from the register). 
 
-Step 6: If `.aib_memory/instructions.md` lists additional file paths the developer has flagged for AIB to read, read each of those files before applying changes. Otherwise skip this step.
+Step 6: Follow strictly the plan and implement it. Implement the tasks in the same order. After each task implented - output a quick summary.
+
+
+Step 7: Apply code/documentation changes required by request scope.
+
+Step 8: Create/update tests where applicable.
+
+Step 9: Run validation/tests and capture results.
+
+Step 10: Resolve any test failures
+
+Step 11: Continue until done criteria are met or blockers are explicitly recorded.
+
+Step 11: Execute `.aib_brain\prompts\aib-refresh-context.md`
+
+Step 12: Move the active-request artifacts to the request subfolder and then auto-close the request by invoking (in this exact order):
+  ```
+  python .aib_brain/tools/move-request-artifacts.py --workspace .
+  python .aib_brain/tools/close-request.py --workspace .
+  ```
+> Rules:
+>  The move step MUST be executed before `close-request.py`. 
+>  MUST: Only invoke these scripts after the implementation is confirmed successful (no unresolved test failures or blockers).
+
+Step 13. Generate `implementation.md` from scratch in the active request folder if it does not exist; append a new Entry if it already exists. Follow the exact Entry Block Format defined in `.aib_brain/conventions/implementation-convention.md`. 
+
+Step 14. MUST confirm at the very end of the conversation with the text "--- I am done with the implementation  of `<request_id>` ---" that all your activities are finished
+
+> Rules:
+> Do not add additional text after "--- I am done with the implementation of `<request_id>` ---" line. MUST: If needed to be written somenting in the output chat - do it before this line.
 
 ## Rules
 
 ### Execution requirements:
 
+- Must not read the Analysis
 - MUST NOT read `inputs/input-archive-*.md` files from any request folder.
 - MUST NOT read or reference any file inside `.aib_memory/requests/<folder>/` that belongs to a Closed request. This covers all artifact types (request, analysis, implementation, input archives, and any other file). A request folder is Closed when its `state` in `requests_register.md` is `Closed`. If in doubt, treat the folder as Closed.
 

@@ -2,7 +2,7 @@
 
 Open [user_guide.html](.aib_brain/user_guide.html) in a browser for the full interactive user guide.
 
-AI Builder (AIB) is a minimal but powerful framework for AI specification based development called. AIB serves for software development, documentation creation, data processing and all other activities which can be achieved with AI.
+AI Builder (AIB) is a minimal but powerful framework for AI specification-driven development. AIB serves for software development, documentation creation, data processing and all other activities which can be achieved with AI.
 
 ## Objectives:
 
@@ -83,13 +83,12 @@ When `aib-analyze.md` identifies decision points with multiple valid implementat
 2. Each question includes:
    - The question text.
    - A `> **Why this matters:**` line explaining the implementation impact.
-   - Mutually exclusive options with checkboxes; the first option is marked `*(recommended)*` as the AI's preferred choice.
-   - A `> Answer:` field for free-text responses.
-3. Answer questions by checking `[x]` next to your chosen option, or writing a free-text answer in the `> Answer:` field.
+   - For multiple-choice: mutually exclusive options with checkboxes; the first option is marked `*(recommended)*` as the AI's preferred choice.
+   - For free-text: a `- Answer: ___` field when no bounded options exist.
+   - Format templates and rules for both Q-block types are defined in `.aib_brain/conventions/q-block-convention.md`.
+3. Answer questions by checking `[x]` next to your chosen option (multiple-choice), or writing a free-text answer after `- Answer:`.
 4. If you leave a question unanswered, the Answer Application Sub-flow halts with an error message and leaves `input.md` unchanged. All Q-blocks must be answered before re-running analysis.
 5. Re-run `aib-analyze.md` — the prompt reads your answers, applies them to the relevant `plan.md` sections, and clears the `## Questions` section from `input.md`.
-
-**One Q&A cycle:** After all questions are answered and the analysis prompt is re-run, no new questions are generated (all ambiguities are resolved).
 
 **Note:** The `## Questions` section is ephemeral — it is never part of the `input.md` seed template and is fully cleared after each Q&A cycle.
 
@@ -130,23 +129,25 @@ When `aib-analyze.md` identifies decision points with multiple valid implementat
 
 .aib_brain/
   - conventions/
-  - prompts/  
+  - prompts/
   - tools/
   - README.md
   - run.bat
   - run.sh
   - user_guide.html
-  - vM.m.p (semver file)
+  - vM.m.p (semver marker file)
 .aib_memory/
-  - archives/
   - attachments/
-  - logs/
   - requests/
-  - context.md 
+  - context.md
   - input.md
   - instructions.md
   - requests_register.md
-  - vM.m.p (semver file)
+logs/
+  - next_version_changes.md
+  - version_vX.Y.Z_log.md (per-version logs)
+versions/
+  - aib_brain_vX.Y.Z.zip (versioned archives)
 
 ## Request Folder Artifacts
 

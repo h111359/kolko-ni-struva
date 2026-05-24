@@ -79,8 +79,9 @@ def _seed_memory(workspace: Path, brain_dir: Path, memory_root: Path, force: boo
         print("input.md already exists — skipping overwrite.")
     else:
         input_seed = (
-            "## Active request\n"
-            "No active request\n\n"
+            "## Status\n"
+            "No active request\n"
+            "State: idle\n\n"
             "## Options\n"
             "- Minimum questions: 0\n\n"
             "## Input\n\n"

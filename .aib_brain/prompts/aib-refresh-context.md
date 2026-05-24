@@ -14,7 +14,7 @@ Produce or modify `.aib_memory/context.md` — a unified, structured synthesis o
 
 ## Non-goals:
 - Do not modify any existing file in the workspace other than `.aib_memory/context.md`.
-- Do not explore or read `.aib_brain/` folder contents except `.aib_brain/conventions/context-convention.md`.
+- Do not explore or read `.aib_brain/` folder contents except `.aib_brain/conventions/context-convention.md` and tool script invocations listed in this prompt.
 - Do not explore `.venv/`, `venv/`, `node_modules/`, `__pycache__/`, `.pytest_cache/`, `.mypy_cache/`, `.git/`.
 - Do not remove content in `.aib_memory\context.md` unless you find evidence it is incorrect.
 
