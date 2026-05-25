@@ -11,17 +11,18 @@ dataset under `data/schema/` for offline analytical use.
 
 1. [Prerequisites](#prerequisites)
 2. [Installation](#installation)
-3. [Repository Structure](#repository-structure)
-4. [Quick Start](#quick-start)
-5. [Scripts](#scripts)
-6. [config.ini Reference](#configini-reference)
-7. [Star Schema](#star-schema)
-8. [SCD Strategy](#scd-strategy)
-9. [Quality Report](#quality-report)
-10. [Querying the Data](#querying-the-data)
-11. [Netlify Deploy & React App Setup](#netlify-deploy--react-app-setup)
-12. [Local Preview](#local-preview)
-13. [Recovery](#recovery)
+3. [Getting Started (Fresh Install)](#getting-started-fresh-install)
+4. [Repository Structure](#repository-structure)
+5. [Quick Start](#quick-start)
+6. [Scripts](#scripts)
+7. [config.ini Reference](#configini-reference)
+8. [Star Schema](#star-schema)
+9. [SCD Strategy](#scd-strategy)
+10. [Quality Report](#quality-report)
+11. [Querying the Data](#querying-the-data)
+12. [Netlify Deploy & React App Setup](#netlify-deploy--react-app-setup)
+13. [Local Preview](#local-preview)
+14. [Recovery](#recovery)
 
 ---
 
@@ -46,6 +47,64 @@ source venv/bin/activate      # Windows: venv\Scripts\activate
 
 # 3. Install dependencies
 pip install -r requirements.txt
+```
+
+---
+
+## Getting Started (Fresh Install)
+
+Follow these steps after cloning to have a fully operational environment.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/h111359/kolko-ni-struva.git
+cd kolko-ni-struva
+```
+
+### 2. Create a Python virtual environment and install dependencies
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Copy configuration templates
+
+```bash
+cp config.ini.example config.ini
+cp .env.example .env
+```
+
+### 4. Fill in credentials
+
+Open `.env` and supply real values for every variable. The comments in `.env.example` explain each variable. The required variables are:
+
+- `SUPABASE_URL` — your Supabase project URL.
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — the Supabase anon/publishable key (safe for browser).
+- `SUPABASE_SECRET_KEY` — the Supabase service_role key (server-side only; never expose to the browser).
+- `NETLIFY_TOKEN` — your Netlify personal-access token (required only for deploys via `src/deploy_netlify.py`).
+
+### 5. Install React app dependencies
+
+```bash
+cd react-app
+npm install
+cd ..
+```
+
+### 6. Run the ETL pipeline
+
+```bash
+# Linux / macOS
+bash refresh.sh
+
+# Windows
+refresh.bat
+
+# Or use the interactive menu
+python menu.py
 ```
 
 ---
