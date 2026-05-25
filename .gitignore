@@ -29,15 +29,18 @@ Thumbs.db
 .env.*
 !.env.example
 *.log
+config.ini
+
+# Credentials / scratch files
+netlify token.txt
+curl https ekootljybgoenduwprbw.txt
 
 # Data directories (not committed)
-data/
-data/raw/
-data/interim/
-data/processed/
-!data/raw/README.md
-!data/interim/README.md
-!data/processed/README.md
+data/*
+
+# Nomenclature reference data (required for ETL)
+!data/nomenclatures/
+!data/nomenclatures/**
 
 # Build artifacts
 build/
@@ -45,6 +48,17 @@ build/
 
 # Test outputs
 tests/tmp/
+test_output.txt
+
+# Netlify CLI local state
+.netlify/
+
+# Lab / exploration data
+lab/
+
+# Node / React
+react-app/node_modules/
+react-app/dist
 
 # Ignore all contents of these folders
 helper-scripts/
@@ -53,12 +67,9 @@ test_downloads/
 !.github/
 !.rdd-copilot/
 archive/
-kolko-ni-struva/
 web-deploy/
 
-# Ignore these files 
+# Ignore these files
 data.csv
 prompts-log.md
 task-prompts.md
-
-react-app/dist

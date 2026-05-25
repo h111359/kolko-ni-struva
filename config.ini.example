@@ -1,0 +1,9 @@
+[settings]
+opendata_url = https://kolkostruva.bg/opendata
+max_retries = 3
+retry_delay = 10
+log_level = INFO
+
+[state]
+last_downloaded_date =
+last_processed_date =
