@@ -422,7 +422,7 @@ read configuration from a single `.env` file at the project root.
    **Client-side (React frontend — prefixed with VITE_):**
    ```
    VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=<your Supabase anon key>
+   VITE_SUPABASE_PUBLISHABLE_KEY=<your Supabase publishable key>
    ```
 
    - **DATABASE_URL**: Supabase Dashboard → Settings → Database → Connection string (URI).
@@ -431,7 +431,7 @@ read configuration from a single `.env` file at the project root.
    - **NETLIFY_SITE_ID**: app.netlify.com → your site →
      Site configuration → General → Site details → Site ID.
    - **VITE_SUPABASE_URL**: Supabase Dashboard → Settings → API → Project URL.
-   - **VITE_SUPABASE_ANON_KEY**: Supabase Dashboard → Settings → API → anon (public key).
+   - **VITE_SUPABASE_PUBLISHABLE_KEY**: Supabase Dashboard → Settings → API → Publishable key (sb_publishable_... format).
 
 3. Ensure the Netlify CLI is installed globally:
 
@@ -445,6 +445,16 @@ All environment variables are read from the single `.env` file at project root:
 
 - **Python scripts** (`src/load_supabase.py`, `src/deploy_netlify.py`) load variables via `python-dotenv`.
 - **React frontend** loads `VITE_*` variables via Vite build system (only `VITE_*` prefixed variables are exposed to the browser).
+
+### Migration: VITE_SUPABASE_ANON_KEY → VITE_SUPABASE_PUBLISHABLE_KEY
+
+If you have an existing deployment that used `VITE_SUPABASE_ANON_KEY`, update both the Netlify site settings and your local `.env` before the next deploy:
+
+1. **Update Netlify first** (before pushing code): Netlify dashboard → Site settings → Environment variables → locate `VITE_SUPABASE_ANON_KEY` → rename to `VITE_SUPABASE_PUBLISHABLE_KEY` and update the value to your new `sb_publishable_...` key from the Supabase dashboard.
+2. **Update local `.env`**: rename `VITE_SUPABASE_ANON_KEY` to `VITE_SUPABASE_PUBLISHABLE_KEY` and update the value.
+3. **Then deploy the code**: push this update after the Netlify variable is set to avoid a broken-bundle window.
+
+> **Why order matters**: Vite injects `VITE_*` variables at build time. If the Netlify variable is not renamed before the build, `VITE_SUPABASE_PUBLISHABLE_KEY` resolves to `undefined` and the React app shows only a credentials error screen.
 
 ### Credential loading precedence
 
@@ -463,7 +473,7 @@ saved to `.env` so future deploys do not require re-entry.
 
 - `.env` is excluded from version control by `.gitignore`. Never commit `.env`.
 - Server-side credentials (`DATABASE_URL`, `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`) are sensitive secrets and must be treated carefully.
-- Client-side credentials (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) use Supabase's public anon key, which is safe to expose in the browser.
+- Client-side credentials (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) use Supabase's publishable key (`sb_publishable_...` format), which is safe to expose in the browser.
 - Credentials are passed to subprocesses via environment variables,
   not as command-line arguments, so they are not visible in process listings.
 - `.env.example` (committed) contains only placeholder values — it is safe to

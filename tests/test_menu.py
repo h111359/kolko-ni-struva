@@ -2,12 +2,10 @@
 test_menu.py: Unit tests for menu.py actions and helper functions.
 Part of the kolko-ni-struva ETL pipeline (request R-20260426-2150).
 Responsibilities: verify action_local_preview() call order and credential
-validation, stats helpers, read_state, main loop dispatch, and anon-key
-JWT role security check.
+validation, stats helpers, read_state, main loop dispatch, and
+publishable-key prefix format security check.
 """
-import base64
 import io
-import json
 import sys
 import tempfile
 import unittest
@@ -32,7 +30,7 @@ class TestActionLocalPreviewCredentials(unittest.TestCase):
 
     def test_missing_both_credentials_returns_early(self) -> None:
         """action_local_preview() prints an error and returns without running npm when both VITE_ vars are empty."""
-        with patch.dict("os.environ", {"VITE_SUPABASE_URL": "", "VITE_SUPABASE_ANON_KEY": ""}):
+        with patch.dict("os.environ", {"VITE_SUPABASE_URL": "", "VITE_SUPABASE_PUBLISHABLE_KEY": ""}):
             with patch("menu.load_dotenv"):
                 with patch("menu.subprocess.run") as mock_run:
                     with patch("menu.subprocess.Popen") as mock_popen:
@@ -45,7 +43,7 @@ class TestActionLocalPreviewCredentials(unittest.TestCase):
 
     def test_missing_url_prints_variable_name(self) -> None:
         """Error output names VITE_SUPABASE_URL when only that variable is absent."""
-        with patch.dict("os.environ", {"VITE_SUPABASE_URL": "", "VITE_SUPABASE_ANON_KEY": "key"}):
+        with patch.dict("os.environ", {"VITE_SUPABASE_URL": "", "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_testkey"}):
             with patch("menu.load_dotenv"):
                 with patch("menu.subprocess.run"):
                     captured = io.StringIO()
@@ -54,14 +52,14 @@ class TestActionLocalPreviewCredentials(unittest.TestCase):
         self.assertIn("VITE_SUPABASE_URL", captured.getvalue())
 
     def test_missing_key_prints_variable_name(self) -> None:
-        """Error output names VITE_SUPABASE_ANON_KEY when only that variable is absent."""
-        with patch.dict("os.environ", {"VITE_SUPABASE_URL": "https://x.supabase.co", "VITE_SUPABASE_ANON_KEY": ""}):
+        """Error output names VITE_SUPABASE_PUBLISHABLE_KEY when only that variable is absent."""
+        with patch.dict("os.environ", {"VITE_SUPABASE_URL": "https://x.supabase.co", "VITE_SUPABASE_PUBLISHABLE_KEY": ""}):
             with patch("menu.load_dotenv"):
                 with patch("menu.subprocess.run"):
                     captured = io.StringIO()
                     with patch("sys.stdout", captured):
                         menu.action_local_preview()
-        self.assertIn("VITE_SUPABASE_ANON_KEY", captured.getvalue())
+        self.assertIn("VITE_SUPABASE_PUBLISHABLE_KEY", captured.getvalue())
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +72,7 @@ class TestActionLocalPreviewCallOrder(unittest.TestCase):
     # Valid VITE_ credentials used for all call-order tests.
     _VALID_ENV = {
         "VITE_SUPABASE_URL": "https://x.supabase.co",
-        "VITE_SUPABASE_ANON_KEY": "anon-test-key",
+        "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_testkey",
     }
 
     def _run_and_collect_order(
@@ -347,82 +345,60 @@ class TestMainLoopDispatch(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Security check: VITE_SUPABASE_ANON_KEY must be the anon key (T12)
+# Security check: VITE_SUPABASE_PUBLISHABLE_KEY must use sb_publishable_ prefix (T12)
 # ---------------------------------------------------------------------------
 
-class TestViteAnonKeyRole(unittest.TestCase):
+class TestVitePublishableKeyFormat(unittest.TestCase):
     """
-    Security configuration check: VITE_SUPABASE_ANON_KEY must carry the anon
-    JWT role, not service_role.
+    Security configuration check: VITE_SUPABASE_PUBLISHABLE_KEY must use the
+    sb_publishable_... prefix.
 
-    A service_role key in the React bundle bypasses all Supabase Row Level
-    Security policies, exposing the entire database to unrestricted public
-    access.  Replace VITE_SUPABASE_ANON_KEY in the root .env file with the
-    anon (public) key from the Supabase dashboard
-    (Project Settings → API → 'anon public').
+    A secret key (sb_secret_...) in the React bundle bypasses all Supabase
+    Row Level Security policies, exposing the entire database to unrestricted
+    public access.
     """
 
-    def test_vite_anon_key_role_is_anon(self) -> None:
+    def test_vite_publishable_key_has_correct_prefix(self) -> None:
         """
-        VITE_SUPABASE_ANON_KEY JWT payload must contain role='anon'.
+        VITE_SUPABASE_PUBLISHABLE_KEY must start with 'sb_publishable_'.
 
-        If the current value is the service_role key, this test is skipped
-        with an explicit security action notice.  Remove the skipTest guard
-        in this method only after the key has been replaced in root .env.
+        Skips when .env is absent or the key is not set under the new name.
+        Fails with a security message when the key starts with 'sb_secret_'.
         """
         env_path = _PROJECT_ROOT / ".env"
         if not env_path.exists():
-            self.skipTest(".env file not found; skipping anon key role validation")
+            self.skipTest(".env file not found; skipping publishable key validation")
 
-        anon_key: str | None = None
+        key: str | None = None
         with open(env_path, encoding="utf-8") as fh:
             for line in fh:
                 stripped = line.strip()
-                if stripped.startswith("VITE_SUPABASE_ANON_KEY="):
-                    anon_key = stripped.split("=", 1)[1].strip()
+                if stripped.startswith("VITE_SUPABASE_PUBLISHABLE_KEY="):
+                    key = stripped.split("=", 1)[1].strip()
                     break
 
-        if not anon_key:
+        if not key:
             self.skipTest(
-                "VITE_SUPABASE_ANON_KEY is not set in root .env; "
-                "skipping anon key role validation"
+                "VITE_SUPABASE_PUBLISHABLE_KEY is not set in root .env; "
+                "skipping publishable key validation"
             )
 
-        # Decode the JWT payload segment (second of three dot-separated parts).
-        parts = anon_key.split(".")
-        if len(parts) != 3:
+        # A secret key in the browser bundle bypasses all RLS — hard fail.
+        if key.startswith("sb_secret_"):
             self.fail(
-                "VITE_SUPABASE_ANON_KEY does not appear to be a valid JWT "
-                "(expected three dot-separated Base64url segments)"
+                "SECURITY: VITE_SUPABASE_PUBLISHABLE_KEY is a secret key "
+                "(sb_secret_...). Replace with an sb_publishable_... key from "
+                "the Supabase dashboard (Settings -> API -> Publishable key)."
             )
 
-        # Add base64url padding as required by the standard decoder.
-        payload_b64 = parts[1]
-        padding = (4 - len(payload_b64) % 4) % 4
-        payload_b64 += "=" * padding
+        if key.startswith("sb_publishable_"):
+            # Correct format — test passes.
+            return
 
-        try:
-            payload = json.loads(base64.urlsafe_b64decode(payload_b64))
-        except Exception as exc:  # noqa: BLE001
-            self.fail(f"Failed to decode VITE_SUPABASE_ANON_KEY JWT payload: {exc}")
-
-        actual_role = payload.get("role", "<missing>")
-
-        # SECURITY ACTION REQUIRED: if the role is service_role, the key
-        # must be replaced before deploying to production.
-        if actual_role == "service_role":
-            self.skipTest(
-                "SECURITY ACTION REQUIRED: VITE_SUPABASE_ANON_KEY is the "
-                "service_role key, which bypasses all Supabase RLS policies. "
-                "Replace it with the anon (public) key from the Supabase "
-                "dashboard (Project Settings \u2192 API \u2192 anon public), "
-                "then remove this skipTest guard."
-            )
-
-        self.assertEqual(
-            actual_role,
-            "anon",
-            f"VITE_SUPABASE_ANON_KEY JWT role is '{actual_role}', expected 'anon'.",
+        # Unrecognised format: skip gracefully during migration.
+        self.skipTest(
+            f"VITE_SUPABASE_PUBLISHABLE_KEY has unrecognised format "
+            f"'{key[:20]}...'; skipping prefix validation during migration"
         )
 
 

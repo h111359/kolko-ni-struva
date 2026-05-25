@@ -276,7 +276,7 @@ def action_local_preview() -> None:
     """
     Build the React app and start the Vite local preview server.
 
-    Validates that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are present in
+    Validates that VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are present in
     the root .env file before attempting a build, so the operator receives a
     clear error message instead of a silent empty bundle.  Runs 'npm run build'
     then starts 'npm run preview' from the react-app/ directory as a
@@ -306,12 +306,12 @@ def action_local_preview() -> None:
     # empty credential causes Vite to embed undefined into the bundle, which
     # makes the React app show only the credentials-error screen.
     vite_url = os.environ.get("VITE_SUPABASE_URL", "").strip()
-    vite_key = os.environ.get("VITE_SUPABASE_ANON_KEY", "").strip()
+    vite_key = os.environ.get("VITE_SUPABASE_PUBLISHABLE_KEY", "").strip()
     missing = []
     if not vite_url:
         missing.append("VITE_SUPABASE_URL")
     if not vite_key:
-        missing.append("VITE_SUPABASE_ANON_KEY")
+        missing.append("VITE_SUPABASE_PUBLISHABLE_KEY")
     if missing:
         print(
             f"ERROR: Missing Supabase credentials for the React build: "
@@ -320,7 +320,7 @@ def action_local_preview() -> None:
             f"environment variables) and try again.\n"
             f"  Example:\n"
             f"    VITE_SUPABASE_URL=https://<project>.supabase.co\n"
-            f"    VITE_SUPABASE_ANON_KEY=<your-anon-key>"
+            f"    VITE_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>"
         )
         return
 

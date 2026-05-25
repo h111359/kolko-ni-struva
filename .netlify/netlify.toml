@@ -7,7 +7,7 @@ redirects = []
 [functions."*"]
 
 [build]
-publish = "/home/hromar/Desktop/projects/kolko-ni-struva-2"
+publish = "/home/hromar/Desktop/projects/kolko-ni-struva"
 publishOrigin = "default"
 
 [build.environment]
