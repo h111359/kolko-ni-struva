@@ -47,108 +47,6 @@ header .subtitle {
 }
 
 /* ============================================================
-   Date Selector
-   ============================================================ */
-.data-date-selector {
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.data-date-selector label {
-  color: white;
-  font-size: 0.95em;
-  font-weight: 500;
-}
-
-.date-select {
-  padding: 8px 20px;
-  font-size: 0.95em;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  color: #667eea;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.date-select:hover {
-  background: white;
-  border-color: white;
-}
-
-.date-select:focus {
-  outline: none;
-  background: white;
-  border-color: white;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
-}
-
-/* ============================================================
-   Navigation
-   ============================================================ */
-.main-nav {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: wrap;
-  margin-top: 25px;
-}
-
-.nav-btn {
-  padding: 12px 25px;
-  font-size: 1em;
-  font-weight: 600;
-  color: white;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-}
-
-.nav-btn.active {
-  background: white;
-  color: #667eea;
-  border-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* ============================================================
-   Page Sections
-   ============================================================ */
-.page-section {
-  display: none;
-}
-
-.page-section.active {
-  display: block;
-  animation: fadeIn 0.4s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ============================================================
    Main wrapper
    ============================================================ */
 main {
@@ -506,9 +404,9 @@ main {
    Pagination Controls (FileRowsPanel modern bar)
    ============================================================ */
 
-/* Flex container for the five-element pagination bar:
-   First « | Previous ‹ | Page X of Y | Next › | Last ».
-   gap: 6px keeps buttons and the indicator close without crowding. */
+/* Flex container for the flat-table pagination bar:
+  First « | Previous ‹ | Page input + submit | Next ›.
+  gap: 6px keeps the controls compact while leaving room for the page form. */
 .pagination-controls {
   display: flex;
   align-items: center;
@@ -541,25 +439,53 @@ main {
 }
 
 /* Edge buttons (First «, Last ») use a slightly stronger fill to distinguish
-   them visually from the adjacent Previous/Next buttons. */
+  the first-page affordance from the adjacent Previous/Next buttons. */
 .pagination-btn--edge {
   background: rgba(102, 126, 234, 0.14);
 }
 
+/* Disabled state: lower contrast and remove the lift so unavailable navigation
+  actions read as inactive to both pointer and keyboard users. */
 .pagination-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Page indicator: non-interactive span between Previous and Next buttons.
-   min-width prevents the bar from shifting width when the number changes. */
-.pagination-indicator {
-  padding: 6px 12px;
+/* Inline page-jump form: keeps the label, numeric field, and submit action
+  grouped together so direct page access reads as a single interaction. */
+.pagination-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Form label: keeps the Bulgarian page label close to the numeric field so the
+  page-jump affordance is understandable even without placeholder text. */
+.pagination-jump__label {
   font-size: 0.9em;
+  font-weight: 600;
   color: #555;
-  min-width: 100px;
+}
+
+/* Numeric page field: sized for short page values and centered so digit changes
+  do not make the control visually lopsided. */
+.pagination-jump__input {
+  width: 72px;
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 0.95em;
   text-align: center;
+  border: 1px solid rgba(102, 126, 234, 0.25);
+  border-radius: 6px;
+}
+
+/* Submit button: uses the shared pagination button styling so the page-jump
+  action remains visually part of the same control group. */
+.pagination-jump__submit {
+  min-width: 48px;
 }
 
 /* ============================================================
@@ -779,6 +705,13 @@ main {
   font-size: 1em;
 }
 
+.field-error {
+  display: block;
+  color: #e53e3e;
+  font-size: 0.82em;
+  margin-top: 4px;
+}
+
 /* ============================================================
    Footer
    ============================================================ */
@@ -836,12 +769,6 @@ footer a {
   .control-group {
     min-width: 180px;
   }
-
-  /* Reduce nav button padding so five buttons fit comfortably on one or two lines */
-  .nav-btn {
-    padding: 10px 18px;
-    font-size: 0.95em;
-  }
 }
 
 /*
@@ -873,24 +800,10 @@ footer a {
     font-size: 0.95em;
   }
 
-  /* Stack date selector label and select vertically on very narrow screens */
-  .data-date-selector {
-    flex-direction: column;
-    gap: 6px;
-  }
+  /* Stack date selector label and select vertically on very narrow screens — kept
+     for potential future use; no longer rendered in the header (R-20260525-1400). */
 
-  /* Full-width date select on mobile for easier tapping */
-  .date-select {
-    width: 100%;
-    padding: 10px 12px;
-  }
-
-  /* Reduce nav button size to prevent awkward wrapping of long Bulgarian labels.
-     Font size reduced to keep emoji + text on one line where possible. */
-  .nav-btn {
-    padding: 10px 14px;
-    font-size: 0.85em;
-  }
+  /* Reduce nav button size — kept for potential future use (R-20260525-1400). */
 
   /* Reduce landing page padding so content is not squeezed on a 320px phone.
      At 320px, 50px × 2 = 100px consumed; 16px × 2 = 32px, leaving 256px for content. */

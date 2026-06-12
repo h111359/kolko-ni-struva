@@ -1,12 +1,12 @@
 """
 load_supabase.py: Supabase sync module for the kolko-ni-struva star-schema.
 Part of the kolko-ni-struva ETL pipeline (requests R-20260420-1730 and
-R-20260509-2113).
-Responsibilities: provision star-schema tables in Supabase, persist a bounded
-backend SQL audit trail, upsert all seven dimension CSVs, truncate and
-reinsert fact_prices_lookback on every sync run, prune remote dim_date to the
-latest local fact dates (rolling retention window), and prune remote
-dim_category to only the category keys referenced by the retained fact window.
+R-20260526-2039).
+Responsibilities: provision star-schema tables in Supabase, upsert all seven
+dimension CSVs, truncate and reinsert fact_prices_lookback on every sync run,
+prune remote dim_date to the latest local fact dates (rolling retention
+window), and prune remote dim_category to only the category keys referenced by
+the retained fact window.
 """
 import csv
 import os
@@ -24,9 +24,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = BASE_DIR / "data" / "schema"
 FACTS_DIR = SCHEMA_DIR / "facts"
-SQL_AUDIT_TABLE = "backend_sql_audit_log"
+LANDING_PAGE_ROW_PROJECTION = "landing_page_row_projection"
 BATCH_PAGE_SIZE = 2000
-SQL_AUDIT_RETENTION_DAYS = 30
+PROJECTION_REFRESH_BATCH_SIZE = 250
 
 # ---------------------------------------------------------------------------
 # Dim table descriptors: (table_name, csv_path, pk_col, all_columns)
@@ -79,7 +79,7 @@ DIM_TABLES: List[Tuple[str, Path, str, List[str]]] = [
 # ---------------------------------------------------------------------------
 # DDL definitions
 # ---------------------------------------------------------------------------
-_CREATE_DDL = """
+_CREATE_DDL = f"""
 CREATE TABLE IF NOT EXISTS dim_date (
     date_key   INTEGER PRIMARY KEY,
     date       DATE    NOT NULL,
@@ -140,12 +140,23 @@ CREATE TABLE IF NOT EXISTS fact_prices_lookback (
     promo_price_day2  NUMERIC(12, 4)
 );
 
-CREATE TABLE IF NOT EXISTS backend_sql_audit_log (
-    audit_log_key   BIGSERIAL PRIMARY KEY,
-    executed_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    origin          TEXT NOT NULL,
-    statement_count INTEGER NOT NULL DEFAULT 1,
-    statement_text  TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS {LANDING_PAGE_ROW_PROJECTION} (
+    date_key        INTEGER NOT NULL,
+    settlement_key  INTEGER,
+    category_key    INTEGER NOT NULL,
+    company_key     INTEGER,
+    store_key       INTEGER NOT NULL,
+    file_key        INTEGER,
+    product_key     INTEGER NOT NULL,
+    file_name       TEXT,
+    product_name    TEXT,
+    category_name   TEXT,
+    settlement_name TEXT,
+    store_name      TEXT,
+    company_name    TEXT,
+    retail_price    NUMERIC(12, 4),
+    promo_price     NUMERIC(12, 4),
+    price           NUMERIC(12, 4)
 );
 """
 
@@ -169,11 +180,118 @@ ALTER TABLE IF EXISTS fact_prices_lookback ADD COLUMN IF NOT EXISTS promo_price_
 # ---------------------------------------------------------------------------
 # Migration DDL (request R-20260430-0825)
 # ---------------------------------------------------------------------------
-# Drop the legacy fact_prices table; fact_prices_lookback is now the sole
-# fact table.  CASCADE handles the two B-tree indexes that were created on
-# fact_prices in R-20260429-0757.  The statement is idempotent via IF EXISTS.
+# The legacy fact_prices table and the removed backend SQL audit table are
+# dropped here to keep existing Supabase databases aligned with the current
+# schema on every loader run.
 _MIGRATION_DDL = """
+DROP TABLE IF EXISTS backend_sql_audit_log;
 DROP TABLE IF EXISTS fact_prices CASCADE;
+DROP FUNCTION IF EXISTS get_landing_page_count(INT, INT, INT, INT, INT, TEXT, NUMERIC, NUMERIC);
+"""
+
+_REFRESH_LANDING_PAGE_PROJECTION_SQL = f"""
+INSERT INTO {LANDING_PAGE_ROW_PROJECTION} (
+    date_key,
+    settlement_key,
+    category_key,
+    company_key,
+    store_key,
+    file_key,
+    product_key,
+    file_name,
+    product_name,
+    category_name,
+    settlement_name,
+    store_name,
+    company_name,
+    retail_price,
+    promo_price,
+    price
+)
+SELECT
+    f.date_key,
+    dstore.settlement_key,
+    f.category_key,
+    dstore.company_key,
+    f.store_key,
+    f.file_key,
+    f.product_key,
+    df.file_name,
+    dp.product_name,
+    dc.category_name,
+    dst.settlement_name,
+    dstore.store_name,
+    dcomp.company_name,
+    f.retail_price,
+    f.promo_price,
+    COALESCE(
+        CASE
+            WHEN f.promo_price IS NOT NULL AND f.promo_price > 0
+                THEN LEAST(f.retail_price, f.promo_price)
+            ELSE f.retail_price
+        END,
+        f.retail_price
+    ) AS price
+FROM fact_prices_lookback f
+JOIN dim_product dp ON dp.product_key = f.product_key
+JOIN dim_category dc ON dc.category_key = f.category_key
+JOIN dim_store dstore ON dstore.store_key = f.store_key
+JOIN dim_company dcomp ON dcomp.company_key = dstore.company_key
+JOIN dim_settlement dst ON dst.settlement_key = dstore.settlement_key
+LEFT JOIN dim_file df ON df.file_key = f.file_key;
+"""
+
+_REFRESH_LANDING_PAGE_PROJECTION_BATCH_SQL = f"""
+INSERT INTO {LANDING_PAGE_ROW_PROJECTION} (
+    date_key,
+    settlement_key,
+    category_key,
+    company_key,
+    store_key,
+    file_key,
+    product_key,
+    file_name,
+    product_name,
+    category_name,
+    settlement_name,
+    store_name,
+    company_name,
+    retail_price,
+    promo_price,
+    price
+)
+SELECT
+    f.date_key,
+    dstore.settlement_key,
+    f.category_key,
+    dstore.company_key,
+    f.store_key,
+    f.file_key,
+    f.product_key,
+    df.file_name,
+    dp.product_name,
+    dc.category_name,
+    dst.settlement_name,
+    dstore.store_name,
+    dcomp.company_name,
+    f.retail_price,
+    f.promo_price,
+    COALESCE(
+        CASE
+            WHEN f.promo_price IS NOT NULL AND f.promo_price > 0
+                THEN LEAST(f.retail_price, f.promo_price)
+            ELSE f.retail_price
+        END,
+        f.retail_price
+    ) AS price
+FROM fact_prices_lookback f
+JOIN dim_product dp ON dp.product_key = f.product_key
+JOIN dim_category dc ON dc.category_key = f.category_key
+JOIN dim_store dstore ON dstore.store_key = f.store_key
+JOIN dim_company dcomp ON dcomp.company_key = dstore.company_key
+JOIN dim_settlement dst ON dst.settlement_key = dstore.settlement_key
+LEFT JOIN dim_file df ON df.file_key = f.file_key
+WHERE f.file_key = ANY(%s);
 """
 
 # ---------------------------------------------------------------------------
@@ -189,21 +307,54 @@ DROP TABLE IF EXISTS fact_prices CASCADE;
 #   get_available_dates() (SELECT DISTINCT date_key FROM fact_prices_lookback).
 # idx_fact_prices_lookback_date_store: composite index covering both the WHERE
 #   predicate and the JOIN column for get_settlements_for_date().
-_CREATE_INDEXES = """
+_CREATE_INDEXES = f"""
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE INDEX IF NOT EXISTS idx_fact_prices_lookback_date_key
     ON fact_prices_lookback(date_key);
 
-CREATE INDEX IF NOT EXISTS idx_fact_prices_lookback_date_store
-    ON fact_prices_lookback(date_key, store_key);
+CREATE INDEX IF NOT EXISTS idx_fpl_settlement_key
+    ON fact_prices_lookback(store_key);
 
-CREATE INDEX IF NOT EXISTS idx_fpl_date_cat
-    ON fact_prices_lookback(date_key, category_key);
+CREATE INDEX IF NOT EXISTS idx_fpl_category_key
+    ON fact_prices_lookback(category_key);
 
-CREATE INDEX IF NOT EXISTS idx_fpl_date_store_category
-    ON fact_prices_lookback(date_key, store_key, category_key);
+CREATE INDEX IF NOT EXISTS idx_fpl_product_key
+    ON fact_prices_lookback(product_key);
 
-CREATE INDEX IF NOT EXISTS idx_backend_sql_audit_log_executed_at
-    ON backend_sql_audit_log(executed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_fpl_file_key
+    ON fact_prices_lookback(file_key);
+
+CREATE INDEX IF NOT EXISTS idx_dim_product_name_trgm
+    ON dim_product USING GIN (product_name gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_dim_product_name_sort
+    ON dim_product(product_name, product_key);
+
+CREATE INDEX IF NOT EXISTS idx_dim_store_name_sort
+    ON dim_store(store_name, store_key);
+
+CREATE INDEX IF NOT EXISTS idx_lp_row_projection_page
+    ON {LANDING_PAGE_ROW_PROJECTION}(
+        date_key,
+        product_name,
+        store_name,
+        product_key,
+        store_key,
+        file_key
+    );
+
+CREATE INDEX IF NOT EXISTS idx_lp_row_projection_filter_keys
+    ON {LANDING_PAGE_ROW_PROJECTION}(
+        date_key,
+        settlement_key,
+        category_key,
+        company_key,
+        store_key
+    );
+
+CREATE INDEX IF NOT EXISTS idx_lp_row_projection_product_name_trgm
+    ON {LANDING_PAGE_ROW_PROJECTION} USING GIN (product_name gin_trgm_ops);
 """
 
 # ---------------------------------------------------------------------------
@@ -213,7 +364,7 @@ CREATE INDEX IF NOT EXISTS idx_backend_sql_audit_log_executed_at
 # return already-aggregated or already-enriched report data without
 # transferring raw fact rows to the client.  GRANT statements ensure the
 # Supabase anon role can invoke them.
-_CREATE_RPC_FUNCTIONS = """
+_CREATE_RPC_FUNCTIONS = f"""
 CREATE OR REPLACE FUNCTION get_available_dates()
 RETURNS SETOF int
 LANGUAGE sql
@@ -447,71 +598,370 @@ GRANT EXECUTE ON FUNCTION get_settlements_for_category(bigint, bigint) TO anon;
 GRANT EXECUTE ON FUNCTION get_report_1_category_prices(bigint, bigint, text) TO anon;
 GRANT EXECUTE ON FUNCTION get_report_2_rows(bigint, bigint, bigint, text) TO anon;
 GRANT EXECUTE ON FUNCTION get_report_3_rows(bigint, bigint, text) TO anon;
+
+-- -----------------------------------------------------------------------
+-- Landing-page cross-filter option RPCs (R-20260525-1400)
+-- -----------------------------------------------------------------------
+-- Each RPC returns the valid option list for one dimension filter given
+-- the current values of the other four active filters.  All filters are
+-- optional (NULL = unfiltered).  The option path now reads from the same
+-- landing_page_row_projection surface as the visible row path so selector
+-- interactions stay aligned with the narrowed frontend request model.
+
+CREATE OR REPLACE FUNCTION get_lp_options_settlement(
+    p_date_key     INT,
+    p_category_key INT,
+    p_company_key  INT,
+    p_store_key    INT
+)
+RETURNS TABLE(settlement_key INT, name TEXT)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH filtered_settlements AS (
+        SELECT DISTINCT settlement_key, settlement_name
+        FROM {LANDING_PAGE_ROW_PROJECTION}
+        WHERE settlement_key IS NOT NULL
+          AND (p_date_key     IS NULL OR date_key       = p_date_key)
+          AND (p_category_key IS NULL OR category_key   = p_category_key)
+          AND (p_company_key  IS NULL OR company_key    = p_company_key)
+          AND (p_store_key    IS NULL OR store_key      = p_store_key)
+    )
+    SELECT
+        settlement_key,
+        settlement_name AS name
+    FROM filtered_settlements
+    ORDER BY settlement_name, settlement_key;
+$$;
+
+CREATE OR REPLACE FUNCTION get_lp_options_category(
+    p_date_key       INT,
+    p_settlement_key INT,
+    p_company_key    INT,
+    p_store_key      INT
+)
+RETURNS TABLE(category_key INT, name TEXT)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH filtered_categories AS (
+        SELECT DISTINCT category_key, category_name
+        FROM {LANDING_PAGE_ROW_PROJECTION}
+        WHERE (p_date_key       IS NULL OR date_key        = p_date_key)
+          AND (p_settlement_key IS NULL OR settlement_key  = p_settlement_key)
+          AND (p_company_key    IS NULL OR company_key     = p_company_key)
+          AND (p_store_key      IS NULL OR store_key       = p_store_key)
+    )
+    SELECT
+        category_key,
+        category_name AS name
+    FROM filtered_categories
+    ORDER BY category_name, category_key;
+$$;
+
+CREATE OR REPLACE FUNCTION get_lp_options_company(
+    p_date_key       INT,
+    p_settlement_key INT,
+    p_category_key   INT,
+    p_store_key      INT
+)
+RETURNS TABLE(company_key INT, name TEXT)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH filtered_companies AS (
+        SELECT DISTINCT company_key, company_name
+        FROM {LANDING_PAGE_ROW_PROJECTION}
+        WHERE company_key IS NOT NULL
+          AND (p_date_key       IS NULL OR date_key        = p_date_key)
+          AND (p_settlement_key IS NULL OR settlement_key  = p_settlement_key)
+          AND (p_category_key   IS NULL OR category_key    = p_category_key)
+          AND (p_store_key      IS NULL OR store_key       = p_store_key)
+    )
+    SELECT
+        company_key,
+        company_name AS name
+    FROM filtered_companies
+    ORDER BY company_name, company_key;
+$$;
+
+CREATE OR REPLACE FUNCTION get_lp_options_store(
+    p_date_key       INT,
+    p_settlement_key INT,
+    p_category_key   INT,
+    p_company_key    INT
+)
+RETURNS TABLE(store_key INT, store_name TEXT)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH filtered_stores AS (
+        SELECT DISTINCT store_key, store_name
+        FROM {LANDING_PAGE_ROW_PROJECTION}
+        WHERE (p_date_key       IS NULL OR date_key        = p_date_key)
+          AND (p_settlement_key IS NULL OR settlement_key  = p_settlement_key)
+          AND (p_category_key   IS NULL OR category_key    = p_category_key)
+          AND (p_company_key    IS NULL OR company_key     = p_company_key)
+    )
+    SELECT
+        store_key,
+        store_name
+    FROM filtered_stores
+    ORDER BY store_name, store_key;
+$$;
+
+CREATE OR REPLACE FUNCTION get_lp_options_date(
+    p_settlement_key INT,
+    p_category_key   INT,
+    p_company_key    INT,
+    p_store_key      INT
+)
+RETURNS TABLE(date_key INT, date DATE)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH filtered_date_keys AS (
+                SELECT DISTINCT date_key
+                FROM {LANDING_PAGE_ROW_PROJECTION}
+                WHERE (p_settlement_key IS NULL OR settlement_key = p_settlement_key)
+                    AND (p_category_key   IS NULL OR category_key   = p_category_key)
+                    AND (p_company_key    IS NULL OR company_key    = p_company_key)
+                    AND (p_store_key      IS NULL OR store_key      = p_store_key)
+    )
+    SELECT
+        dd.date_key,
+        dd.date
+    FROM filtered_date_keys keys
+    JOIN dim_date dd ON dd.date_key = keys.date_key
+    ORDER BY dd.date_key DESC;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_lp_options_settlement(INT, INT, INT, INT) TO anon;
+GRANT EXECUTE ON FUNCTION get_lp_options_category(INT, INT, INT, INT) TO anon;
+GRANT EXECUTE ON FUNCTION get_lp_options_company(INT, INT, INT, INT) TO anon;
+GRANT EXECUTE ON FUNCTION get_lp_options_store(INT, INT, INT, INT) TO anon;
+GRANT EXECUTE ON FUNCTION get_lp_options_date(INT, INT, INT, INT) TO anon;
+GRANT SELECT ON {LANDING_PAGE_ROW_PROJECTION} TO anon;
+
+-- -----------------------------------------------------------------------
+-- Landing-page main data RPCs (R-20260525-1400, updated R-20260525-2203)
+-- -----------------------------------------------------------------------
+-- get_landing_page_rows: server-side paginated flat detail rows backed by a
+--   read-optimized materialized projection; returns rows only (no window count).
+-- get_landing_page_grouped: dynamic two-level GROUP BY aggregation; group
+--   column names are validated against a whitelist before %I interpolation
+--   to prevent SQL injection (security-critical).
+
+CREATE OR REPLACE FUNCTION get_landing_page_rows(
+    p_date_key       INT,
+    p_settlement_key INT,
+    p_category_key   INT,
+    p_company_key    INT,
+    p_store_key      INT,
+    p_product_name   TEXT,
+    p_price_min      NUMERIC,
+    p_price_max      NUMERIC,
+    p_offset         INT,
+    p_limit          INT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_sql TEXT;
+    v_json JSON;
+BEGIN
+    v_sql := '
+        SELECT COALESCE(json_agg(row_to_json(t)), ''[]''::json)
+        FROM (
+            SELECT
+                file_name,
+                product_name,
+                category_name,
+                settlement_name,
+                store_name,
+                company_name,
+                retail_price,
+                promo_price,
+                price
+            FROM {LANDING_PAGE_ROW_PROJECTION}
+            WHERE 1=1 ';
+
+    IF p_date_key IS NOT NULL THEN
+        v_sql := v_sql || ' AND date_key = $1 ';
+    END IF;
+
+    IF p_settlement_key IS NOT NULL THEN
+        v_sql := v_sql || ' AND settlement_key = $2 ';
+    END IF;
+
+    IF p_category_key IS NOT NULL THEN
+        v_sql := v_sql || ' AND category_key = $3 ';
+    END IF;
+
+    IF p_company_key IS NOT NULL THEN
+        v_sql := v_sql || ' AND company_key = $4 ';
+    END IF;
+
+    IF p_store_key IS NOT NULL THEN
+        v_sql := v_sql || ' AND store_key = $5 ';
+    END IF;
+
+    IF p_product_name IS NOT NULL THEN
+        v_sql := v_sql || ' AND product_name ILIKE ''%'' || $6 || ''%'' ';
+    END IF;
+
+    IF p_price_min IS NOT NULL THEN
+        v_sql := v_sql || ' AND price >= $7 ';
+    END IF;
+
+    IF p_price_max IS NOT NULL THEN
+        v_sql := v_sql || ' AND price <= $8 ';
+    END IF;
+
+    v_sql := v_sql || '
+            ORDER BY
+                product_name ASC,
+                store_name ASC,
+                product_key ASC,
+                store_key ASC,
+                file_key ASC
+            OFFSET $9 LIMIT $10
+        ) t';
+
+    EXECUTE v_sql INTO v_json USING p_date_key, p_settlement_key, p_category_key, p_company_key, p_store_key, p_product_name, p_price_min, p_price_max, p_offset, p_limit;
+    RETURN v_json;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_landing_page_grouped(
+    p_date_key       INT,
+    p_settlement_key INT,
+    p_category_key   INT,
+    p_company_key    INT,
+    p_store_key      INT,
+    p_product_name   TEXT,
+    p_price_min      NUMERIC,
+    p_price_max      NUMERIC,
+    p_group_by_1     TEXT,
+    p_group_by_2     TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    -- Whitelist of valid grouping dimension column names from the inner subquery.
+    -- Any name outside this list is rejected before identifier interpolation.
+    v_valid_dims CONSTANT TEXT[] := ARRAY[
+        'settlement_name', 'category_name', 'company_name', 'store_name', 'date_key'
+    ];
+    v_select_group2 TEXT := '';
+    v_groupby_extra TEXT := '';
+    v_sql           TEXT;
+    v_result        JSON;
+BEGIN
+    -- Security gate: reject group-by values not in the whitelist.
+    -- %I provides identifier quoting, but validation is the primary defence.
+    IF NOT (p_group_by_1 = ANY(v_valid_dims)) THEN
+        RAISE EXCEPTION 'Invalid grouping dimension: %', p_group_by_1;
+    END IF;
+    IF p_group_by_2 IS NOT NULL AND NOT (p_group_by_2 = ANY(v_valid_dims)) THEN
+        RAISE EXCEPTION 'Invalid grouping dimension: %', p_group_by_2;
+    END IF;
+
+    -- Build optional second-level GROUP BY SQL fragments using validated identifiers.
+    IF p_group_by_2 IS NOT NULL THEN
+        v_select_group2 := format(', %I AS group2', p_group_by_2);
+        v_groupby_extra := format(', %I', p_group_by_2);
+    END IF;
+
+    -- Dynamically assemble the aggregation query.
+    -- %I: identifier quoting for validated group-by names.
+    -- %s: pre-built SQL fragments that already carry %I quoting.
+    -- %%: escapes to a literal % inside the ILIKE pattern.
+    v_sql := format($q$
+        SELECT COALESCE(json_agg(row_to_json(g)), '[]'::json)
+        FROM (
+            SELECT
+                %I AS group1
+                %s,
+                AVG(eff_price)    AS price_avg,
+                MIN(eff_price)    AS price_min,
+                MAX(eff_price)    AS price_max,
+                AVG(CASE WHEN promo_price IS NOT NULL AND promo_price > 0 THEN promo_price END)
+                                  AS promo_avg,
+                MIN(CASE WHEN promo_price IS NOT NULL AND promo_price > 0 THEN promo_price END)
+                                  AS promo_min,
+                MAX(CASE WHEN promo_price IS NOT NULL AND promo_price > 0 THEN promo_price END)
+                                  AS promo_max
+            FROM (
+                SELECT
+                    dc.category_name,
+                    dst.settlement_name,
+                    dcomp.company_name,
+                    dstore.store_name,
+                    f.date_key,
+                    f.promo_price,
+                    COALESCE(
+                        CASE WHEN f.promo_price IS NOT NULL AND f.promo_price > 0
+                            THEN LEAST(f.retail_price, f.promo_price)
+                            ELSE f.retail_price
+                        END,
+                        f.retail_price
+                    ) AS eff_price
+                FROM fact_prices_lookback f
+                JOIN dim_product dp    ON dp.product_key    = f.product_key
+                JOIN dim_category dc   ON dc.category_key   = f.category_key
+                JOIN dim_store dstore  ON dstore.store_key  = f.store_key
+                JOIN dim_company dcomp ON dcomp.company_key = dstore.company_key
+                JOIN dim_settlement dst ON dst.settlement_key = dstore.settlement_key
+                WHERE 1=1
+                %s
+            ) inner_data
+            GROUP BY %I %s
+            ORDER BY %I
+        ) g
+    $q$, p_group_by_1, v_select_group2,
+    
+    (CASE WHEN p_date_key IS NOT NULL THEN ' AND f.date_key = $1 ' ELSE '' END) || 
+    (CASE WHEN p_settlement_key IS NOT NULL THEN ' AND dstore.settlement_key = $2 ' ELSE '' END) || 
+    (CASE WHEN p_category_key IS NOT NULL THEN ' AND f.category_key = $3 ' ELSE '' END) || 
+    (CASE WHEN p_company_key IS NOT NULL THEN ' AND dstore.company_key = $4 ' ELSE '' END) || 
+    (CASE WHEN p_store_key IS NOT NULL THEN ' AND f.store_key = $5 ' ELSE '' END) || 
+    (CASE WHEN p_product_name IS NOT NULL THEN ' AND dp.product_name ILIKE ''%%'' || $6 || ''%%'' ' ELSE '' END) || 
+    (CASE WHEN p_price_min IS NOT NULL THEN ' AND COALESCE(
+                        CASE WHEN f.promo_price IS NOT NULL AND f.promo_price > 0
+                            THEN LEAST(f.retail_price, f.promo_price)
+                            ELSE f.retail_price END,
+                        f.retail_price) >= $7 ' ELSE '' END) || 
+    (CASE WHEN p_price_max IS NOT NULL THEN ' AND COALESCE(
+                        CASE WHEN f.promo_price IS NOT NULL AND f.promo_price > 0
+                            THEN LEAST(f.retail_price, f.promo_price)
+                            ELSE f.retail_price END,
+                        f.retail_price) <= $8 ' ELSE '' END),
+    
+    p_group_by_1, v_groupby_extra, p_group_by_1);
+
+    EXECUTE v_sql INTO v_result
+    USING p_date_key, p_settlement_key, p_category_key, p_company_key, p_store_key,
+          p_product_name, p_price_min, p_price_max;
+    RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_landing_page_rows(INT, INT, INT, INT, INT, TEXT, NUMERIC, NUMERIC, INT, INT) TO anon;
+GRANT EXECUTE ON FUNCTION get_landing_page_grouped(INT, INT, INT, INT, INT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT) TO anon;
 """
-
-_AUDIT_INSERT_SQL = f"""
-INSERT INTO {SQL_AUDIT_TABLE} (
-    origin,
-    statement_count,
-    statement_text
-) VALUES (%s, %s, %s)
-"""
-
-
-def _render_sql_text(
-    cur: "psycopg2.extensions.cursor",
-    sql: str,
-    params: Optional[tuple] = None,
-) -> str:
-    """
-    Render the exact SQL text psycopg2 will send for one statement.
-
-    Args:
-        cur: Cursor used for mogrify rendering.
-        sql: SQL template or literal statement text.
-        params: Bound parameters for the SQL template, when present.
-
-    Returns:
-        Fully rendered SQL text suitable for audit logging.
-    """
-    if params is None:
-        return sql
-
-    rendered = cur.mogrify(sql, params)
-    return rendered.decode("utf-8") if isinstance(rendered, bytes) else str(rendered)
-
-
-def _record_sql_audit(
-    cur: "psycopg2.extensions.cursor",
-    origin: str,
-    statement_text: str,
-    statement_count: int = 1,
-) -> None:
-    """
-    Insert one backend SQL audit row without recursively self-logging.
-
-    Args:
-        cur: Open cursor used for the current transaction.
-        origin: Logical origin label for the emitted SQL.
-        statement_text: Fully rendered SQL text sent to PostgreSQL.
-        statement_count: Number of individual statements represented by the log row.
-    """
-    # Use a sibling cursor so the caller's cursor keeps its rowcount and any
-    # pending result set from the primary statement.
-    with cur.connection.cursor() as audit_cur:
-        audit_cur.execute(
-            _AUDIT_INSERT_SQL,
-            (origin, statement_count, statement_text),
-        )
-
 
 def _chunk_rows(rows: List[tuple], page_size: int) -> List[List[tuple]]:
     """
-    Split batched parameter rows into execute_batch-sized pages.
+    Split rows into stable execute_batch-sized pages.
 
     Args:
-        rows: Full parameter-row list for a batch statement.
-        page_size: Maximum number of parameter rows per emitted page.
+        rows: Parameter rows scheduled for batched execution.
+        page_size: Maximum number of rows per batch page.
 
     Returns:
         List of row pages in original order.
@@ -519,115 +969,54 @@ def _chunk_rows(rows: List[tuple], page_size: int) -> List[List[tuple]]:
     return [rows[index:index + page_size] for index in range(0, len(rows), page_size)]
 
 
-def _render_batch_sql(
-    cur: "psycopg2.extensions.cursor",
-    sql: str,
-    rows: List[tuple],
-) -> str:
-    """
-    Render one execute_batch page as the exact SQL text sent to PostgreSQL.
-
-    Args:
-        cur: Cursor used for mogrify rendering.
-        sql: Parameterized SQL template for one logical statement.
-        rows: Parameter rows included in the current batch page.
-
-    Returns:
-        Semicolon-delimited SQL text for the current batch page.
-    """
-    return ";".join(_render_sql_text(cur, sql, row) for row in rows)
-
-
 def execute_sql(
     cur: "psycopg2.extensions.cursor",
     sql: str,
     params: Optional[tuple] = None,
-    origin: str = "unknown",
 ) -> None:
     """
-    Execute one SQL statement and persist its rendered text to the audit table.
+    Execute one SQL statement on the caller cursor.
 
     Args:
         cur: Open cursor used for the current transaction.
         sql: SQL template or literal statement text.
         params: Bound parameters for the SQL template, when present.
-        origin: Logical origin label for the emitted SQL.
     """
-    rendered_sql = _render_sql_text(cur, sql, params)
     cur.execute(sql, params)
-    _record_sql_audit(cur, origin, rendered_sql)
 
 
-def execute_batch_with_audit(
+def execute_batch_rows(
     cur: "psycopg2.extensions.cursor",
     sql: str,
     rows: List[tuple],
-    origin: str,
     page_size: int = BATCH_PAGE_SIZE,
 ) -> None:
     """
-    Execute batched SQL and log the exact SQL page text emitted to PostgreSQL.
+    Execute batched SQL in stable pages.
 
     Args:
         cur: Open cursor used for the current transaction.
         sql: Parameterized SQL template for one logical statement.
         rows: Parameter rows to execute.
-        origin: Logical origin label for the emitted SQL.
         page_size: Maximum number of parameter rows per emitted batch page.
     """
     for page_rows in _chunk_rows(rows, page_size):
-        batch_sql = _render_batch_sql(cur, sql, page_rows)
         psycopg2.extras.execute_batch(cur, sql, page_rows, page_size=len(page_rows))
-        _record_sql_audit(cur, origin, batch_sql, statement_count=len(page_rows))
-
-
-def prune_sql_audit_log(
-    conn: "psycopg2.extensions.connection",
-    retention_days: int = SQL_AUDIT_RETENTION_DAYS,
-) -> int:
-    """
-    Delete audit rows older than the configured rolling retention window.
-
-    Args:
-        conn: Open psycopg2 connection to the Supabase PostgreSQL database.
-        retention_days: Number of days of backend SQL audit history to keep.
-
-    Returns:
-        Number of audit rows deleted.
-
-    Raises:
-        psycopg2.DatabaseError: On any database error; transaction is rolled
-            back before re-raising.
-    """
-    delete_sql = (
-        f"DELETE FROM {SQL_AUDIT_TABLE} "
-        f"WHERE executed_at < CURRENT_TIMESTAMP - INTERVAL '{retention_days} days'"
-    )
-    try:
-        with conn.cursor() as cur:
-            execute_sql(cur, delete_sql, origin="prune_sql_audit_log")
-            deleted = cur.rowcount
-        conn.commit()
-    except psycopg2.DatabaseError:
-        conn.rollback()
-        raise
-
-    print(f"  Pruned {deleted:,} backend SQL audit rows outside retained window.")
-    return deleted
 
 
 def create_tables(conn: "psycopg2.extensions.connection") -> None:
     """
     Provision the star-schema tables, apply nullable migrations, run the
-    fact_prices migration (DROP TABLE IF EXISTS), provision RPC helper
-    functions, and create targeted B-tree indexes on fact_prices_lookback.
+    fact_prices migration (DROP TABLE IF EXISTS), provision the landing-page
+    row projection and RPC helper functions, and create targeted indexes.
 
     Execution order:
     1. _CREATE_DDL         — CREATE TABLE IF NOT EXISTS for all eight tables
                              (fact_prices_lookback is the sole fact table).
     2. _ENSURE_NULLABLE_DDL — idempotent nullable-column migration guards.
-    3. _MIGRATION_DDL      — DROP TABLE IF EXISTS fact_prices CASCADE;
-                             removes the legacy table on every run (idempotent).
+    3. _MIGRATION_DDL      — DROP TABLE IF EXISTS backend_sql_audit_log and
+                             DROP TABLE IF EXISTS fact_prices CASCADE;
+                             removes retired tables on every run (idempotent).
     4. _CREATE_RPC_FUNCTIONS — provision get_available_dates(),
                              get_settlements_for_date(),
                              get_categories_for_settlement(),
@@ -646,29 +1035,48 @@ def create_tables(conn: "psycopg2.extensions.connection") -> None:
         on every invocation.
     """
     with conn.cursor() as cur:
-        execute_sql(cur, _CREATE_DDL, origin="create_tables:create_ddl")
+        execute_sql(cur, _MIGRATION_DDL)
+        execute_sql(cur, _CREATE_DDL)
         # Apply the nullable migration after table creation so that any pre-existing
         # tables with erroneous NOT NULL constraints are corrected idempotently.
-        execute_sql(
-            cur,
-            _ENSURE_NULLABLE_DDL,
-            origin="create_tables:ensure_nullable_ddl",
-        )
-        # Drop the legacy fact_prices table (R-20260430-0825).  IF EXISTS makes
-        # this idempotent; CASCADE removes dependent indexes automatically.
-        execute_sql(cur, _MIGRATION_DDL, origin="create_tables:migration_ddl")
-        # Provision the RPC helper functions; they now query fact_prices_lookback.
-        execute_sql(
-            cur,
-            _CREATE_RPC_FUNCTIONS,
-            origin="create_tables:create_rpc_functions",
-        )
+        execute_sql(cur, _ENSURE_NULLABLE_DDL)
+        # Provision the landing-page projection and RPC helper functions.
+        execute_sql(cur, _CREATE_RPC_FUNCTIONS)
         # Create targeted indexes on fact_prices_lookback so the RPC functions
         # execute via index-only scans.  Both use IF NOT EXISTS and are idempotent.
-        execute_sql(cur, _CREATE_INDEXES, origin="create_tables:create_indexes")
+        execute_sql(cur, _CREATE_INDEXES)
     conn.commit()
     print("Tables created / verified.")
     print("Indexes created / verified.")
+
+
+def refresh_landing_page_projection(
+    conn: "psycopg2.extensions.connection",
+) -> None:
+    """
+    Rebuild the landing-page derived table after retained-window changes.
+
+    Args:
+        conn: Open psycopg2 connection to the Supabase PostgreSQL database.
+
+    Side effects:
+        Truncates and repopulates the derived table that backs the landing-page row and
+        count RPCs so anonymous pagination reads the latest retained data.
+    """
+    with conn.cursor() as cur:
+        execute_sql(cur, "SELECT DISTINCT file_key FROM fact_prices_lookback ORDER BY file_key")
+        file_keys = [row[0] for row in cur.fetchall()]
+
+        execute_sql(cur, f"TRUNCATE TABLE {LANDING_PAGE_ROW_PROJECTION}")
+        for batch_start in range(0, len(file_keys), PROJECTION_REFRESH_BATCH_SIZE):
+            batch_keys = file_keys[batch_start:batch_start + PROJECTION_REFRESH_BATCH_SIZE]
+            execute_sql(cur, _REFRESH_LANDING_PAGE_PROJECTION_BATCH_SQL, (batch_keys,))
+
+        if not file_keys:
+            execute_sql(cur, _REFRESH_LANDING_PAGE_PROJECTION_SQL)
+        execute_sql(cur, f"ANALYZE {LANDING_PAGE_ROW_PROJECTION}")
+    conn.commit()
+    print("Landing-page projection refreshed.")
 
 
 def upsert_dim(
@@ -719,7 +1127,7 @@ def upsert_dim(
             rows.append(tuple(_coerce(row[c]) for c in columns))
 
     with conn.cursor() as cur:
-        execute_batch_with_audit(cur, sql, rows, origin=f"upsert_dim:{table}")
+        execute_batch_rows(cur, sql, rows)
     conn.commit()
     print(f"  Upserted {len(rows):,} rows into {table}.")
     return len(rows)
@@ -805,12 +1213,7 @@ def get_date_keys_for_dates(
     with conn.cursor() as cur:
         # Cast the Python list to a PostgreSQL text array; compare via CAST to
         # avoid locale-dependent date formatting differences.
-        execute_sql(
-            cur,
-            "SELECT date_key FROM dim_date WHERE date::text = ANY(%s)",
-            (date_strings,),
-            origin="get_date_keys_for_dates",
-        )
+        execute_sql(cur, "SELECT date_key FROM dim_date WHERE date::text = ANY(%s)", (date_strings,))
         rows = cur.fetchall()
     return [r[0] for r in rows]
 
@@ -850,12 +1253,7 @@ def prune_dim_date(
     sql = f"DELETE FROM dim_date WHERE date_key NOT IN ({placeholders})"
     try:
         with conn.cursor() as cur:
-            execute_sql(
-                cur,
-                sql,
-                tuple(retained_date_keys),
-                origin="prune_dim_date",
-            )
+            execute_sql(cur, sql, tuple(retained_date_keys))
             deleted = cur.rowcount
         conn.commit()
     except psycopg2.DatabaseError:
@@ -897,11 +1295,7 @@ def prune_dim_category(
         # fact window.  This subquery is the authoritative source of "live"
         # category keys after insert_lookback has fully refreshed the table.
         with conn.cursor() as cur:
-            execute_sql(
-                cur,
-                "SELECT DISTINCT category_key FROM fact_prices_lookback",
-                origin="prune_dim_category:select_referenced_keys",
-            )
+            execute_sql(cur, "SELECT DISTINCT category_key FROM fact_prices_lookback")
             rows = cur.fetchall()
 
         referenced_keys = [r[0] for r in rows]
@@ -919,12 +1313,7 @@ def prune_dim_category(
         placeholders = ", ".join(["%s"] * len(referenced_keys))
         sql = f"DELETE FROM dim_category WHERE category_key NOT IN ({placeholders})"
         with conn.cursor() as cur:
-            execute_sql(
-                cur,
-                sql,
-                tuple(referenced_keys),
-                origin="prune_dim_category:delete_unreferenced_keys",
-            )
+            execute_sql(cur, sql, tuple(referenced_keys))
             deleted = cur.rowcount
         conn.commit()
     except psycopg2.DatabaseError:
@@ -989,18 +1378,9 @@ def insert_lookback(
     try:
         with conn.cursor() as cur:
             # Full replacement: truncate first, then reinsert.
-            execute_sql(
-                cur,
-                "TRUNCATE TABLE fact_prices_lookback",
-                origin="insert_lookback:truncate",
-            )
+            execute_sql(cur, "TRUNCATE TABLE fact_prices_lookback")
             if rows:
-                execute_batch_with_audit(
-                    cur,
-                    insert_sql,
-                    rows,
-                    origin="insert_lookback:insert_rows",
-                )
+                execute_batch_rows(cur, insert_sql, rows)
         conn.commit()
     except psycopg2.DatabaseError:
         conn.rollback()
@@ -1097,8 +1477,10 @@ def main() -> None:
         print("Pruning remote dim_category to retained fact window …")
         prune_dim_category(conn)
 
-        print("Pruning backend SQL audit log to retained window …")
-        prune_sql_audit_log(conn)
+        # Step 7: Refresh the denormalized landing-page projection after all
+        # retained-window mutations so the anon RPC reads the current snapshot.
+        print("Refreshing landing-page projection …")
+        refresh_landing_page_projection(conn)
 
         print("Supabase sync complete.")
 

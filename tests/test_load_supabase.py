@@ -1,13 +1,10 @@
 """
 test_load_supabase.py: Unit tests for src/load_supabase.py core functions.
-Part of the kolko-ni-struva ETL pipeline (request R-20260425-2313).
-Responsibilities: verify create_tables DDL execution, upsert SQL conflict
-clause format, insert_lookback behaviour, and rolling 3-day remote retention
-behavior added in request R-20260429-0825.  Updated in R-20260430-0825 to
-remove tests for deleted functions (insert_fact_day, prune_fact_prices,
-get_latest_remote_date) and update DDL/index assertions for
-fact_prices_lookback.
-All tests use mocked psycopg2 connections — no live database is required.
+Part of the kolko-ni-struva ETL pipeline (request R-20260526-2039).
+Responsibilities: verify schema provisioning, generic SQL execution helpers,
+batched upserts, lookback refresh behaviour, and rolling retention helpers for
+the current Supabase sync flow.
+All tests use mocked psycopg2 connections and extras helpers.
 """
 import csv
 import sys
@@ -48,16 +45,16 @@ with patch.dict(
     },
 ):
     from load_supabase import (  # noqa: E402
-        SQL_AUDIT_TABLE,
+        LANDING_PAGE_ROW_PROJECTION,
         create_tables,
-        execute_batch_with_audit,
+        execute_batch_rows,
         execute_sql,
         _CREATE_RPC_FUNCTIONS,
         get_retained_local_dates,
         get_date_keys_for_dates,
-        prune_sql_audit_log,
         prune_dim_category,
         prune_dim_date,
+        refresh_landing_page_projection,
         insert_lookback,
         upsert_dim,
         _CREATE_DDL,
@@ -107,32 +104,20 @@ def _make_mock_conn():
     return mock_conn, primary_cursor
 
 
-def _non_audit_sql_calls(mock_cursor):
-    """Return execute() calls excluding INSERTs into the audit table itself."""
+def _executed_sql_calls(mock_cursor):
+    """Return execute() SQL strings for a single cursor mock."""
     return [
         str(call.args[0])
         for call in mock_cursor.execute.call_args_list
-        if f"INSERT INTO {SQL_AUDIT_TABLE}" not in str(call.args[0])
     ]
 
 
-def _audit_sql_calls(mock_conn):
-    """Return audit INSERT execute() calls across all cursors for a connection."""
-    return [
-        call
-        for cursor in mock_conn._cursor_mocks
-        for call in cursor.execute.call_args_list
-        if f"INSERT INTO {SQL_AUDIT_TABLE}" in str(call.args[0])
-    ]
-
-
-def _non_audit_sql_calls_for_conn(mock_conn):
-    """Return non-audit execute() SQL strings across all cursors for a connection."""
+def _executed_sql_calls_for_conn(mock_conn):
+    """Return execute() SQL strings across all cursors for a connection."""
     return [
         str(call.args[0])
         for cursor in mock_conn._cursor_mocks
         for call in cursor.execute.call_args_list
-        if f"INSERT INTO {SQL_AUDIT_TABLE}" not in str(call.args[0])
     ]
 
 
@@ -144,7 +129,7 @@ class TestCreateTables(unittest.TestCase):
         mock_conn, mock_cursor = _make_mock_conn()
         create_tables(mock_conn)
         # Collect all SQL strings passed to execute across all calls.
-        executed_sql = " ".join(_non_audit_sql_calls(mock_cursor))
+        executed_sql = " ".join(_executed_sql_calls(mock_cursor))
         self.assertIn("CREATE TABLE IF NOT EXISTS dim_date", executed_sql)
 
     def test_commits_after_ddl(self) -> None:
@@ -157,7 +142,7 @@ class TestCreateTables(unittest.TestCase):
         """create_tables executes exactly five DDL blocks: main DDL, nullable DDL, migration DDL, RPC DDL, index DDL."""
         mock_conn, mock_cursor = _make_mock_conn()
         create_tables(mock_conn)
-        self.assertEqual(len(_non_audit_sql_calls(mock_cursor)), 5)
+        self.assertEqual(len(_executed_sql_calls(mock_cursor)), 5)
 
     def test_create_ddl_does_not_contain_fact_prices_table(self) -> None:
         """_CREATE_DDL must not contain CREATE TABLE IF NOT EXISTS fact_prices (only lookback)."""
@@ -167,9 +152,16 @@ class TestCreateTables(unittest.TestCase):
         self.assertNotIn('fact_prices', matches)
         self.assertIn('fact_prices_lookback', matches)
 
-    def test_create_ddl_contains_backend_sql_audit_table(self) -> None:
-        """_CREATE_DDL provisions the backend SQL audit table."""
-        self.assertIn(f"CREATE TABLE IF NOT EXISTS {SQL_AUDIT_TABLE}", _CREATE_DDL)
+    def test_create_ddl_does_not_contain_backend_sql_audit_table(self) -> None:
+        """_CREATE_DDL no longer provisions the removed backend SQL audit table."""
+        self.assertNotIn("backend_sql_audit_log", _CREATE_DDL)
+
+    def test_create_ddl_contains_landing_page_projection(self) -> None:
+        """_CREATE_DDL provisions the landing-page projection table."""
+        self.assertIn(
+            f"CREATE TABLE IF NOT EXISTS {LANDING_PAGE_ROW_PROJECTION}",
+            _CREATE_DDL,
+        )
 
     def test_index_ddl_contains_lookback_date_key_index(self) -> None:
         """_CREATE_INDEXES contains CREATE INDEX IF NOT EXISTS for fact_prices_lookback(date_key)."""
@@ -186,9 +178,15 @@ class TestCreateTables(unittest.TestCase):
         self.assertIn("ON fact_prices_lookback", _CREATE_INDEXES)
         self.assertNotIn("ON fact_prices(", _CREATE_INDEXES)
 
-    def test_index_ddl_contains_backend_sql_audit_index(self) -> None:
-        """_CREATE_INDEXES provisions the audit-table executed_at index."""
-        self.assertIn("idx_backend_sql_audit_log_executed_at", _CREATE_INDEXES)
+    def test_index_ddl_does_not_contain_backend_sql_audit_index(self) -> None:
+        """_CREATE_INDEXES no longer provisions audit-table indexes."""
+        self.assertNotIn("idx_backend_sql_audit_log_executed_at", _CREATE_INDEXES)
+
+    def test_index_ddl_contains_landing_page_projection_indexes(self) -> None:
+        """_CREATE_INDEXES provisions landing-page projection paging and filter indexes."""
+        self.assertIn("idx_lp_row_projection_page", _CREATE_INDEXES)
+        self.assertIn("idx_lp_row_projection_filter_keys", _CREATE_INDEXES)
+        self.assertIn("idx_lp_row_projection_product_name_trgm", _CREATE_INDEXES)
 
     def test_index_ddl_contains_report_slice_index(self) -> None:
         """_CREATE_INDEXES provisions the report-oriented date/store/category index."""
@@ -216,60 +214,78 @@ class TestCreateTables(unittest.TestCase):
             _CREATE_RPC_FUNCTIONS,
         )
 
+    def test_rpc_ddl_routes_landing_page_queries_through_projection(self) -> None:
+        """Landing-page row and count RPCs query the read-optimized projection."""
+        self.assertIn(f"FROM {LANDING_PAGE_ROW_PROJECTION}", _CREATE_RPC_FUNCTIONS)
+        self.assertIn(
+            f"GRANT SELECT ON {LANDING_PAGE_ROW_PROJECTION} TO anon;",
+            _CREATE_RPC_FUNCTIONS,
+        )
 
-class TestAuditHelpers(unittest.TestCase):
-    """Tests for the backend SQL audit helper functions."""
+
+class TestSqlHelpers(unittest.TestCase):
+    """Tests for the generic SQL execution helper functions."""
 
     def setUp(self) -> None:
         """Reset the execute_batch mock call history before each test."""
         _EXECUTE_BATCH.reset_mock()
 
-    def test_execute_sql_logs_origin_and_rendered_text(self) -> None:
-        """execute_sql runs the statement and inserts an audit row for it."""
+    def test_execute_sql_runs_single_statement(self) -> None:
+        """execute_sql runs the provided statement on the caller cursor."""
         mock_conn, mock_cursor = _make_mock_conn()
-        mock_conn.cursor()
-        mock_conn.cursor.reset_mock()
         execute_sql(
             mock_cursor,
             "SELECT date_key FROM dim_date WHERE date::text = ANY(%s)",
             (["2026-04-29"],),
-            origin="get_date_keys_for_dates",
         )
 
         self.assertEqual(mock_cursor.execute.call_count, 1)
-        audit_call = _audit_sql_calls(mock_conn)[0]
-        self.assertIn(f"INSERT INTO {SQL_AUDIT_TABLE}", audit_call.args[0])
-        self.assertEqual(audit_call.args[1][0], "get_date_keys_for_dates")
-        self.assertEqual(audit_call.args[1][1], 1)
-        self.assertIn("SELECT date_key FROM dim_date", audit_call.args[1][2])
+        executed_sql = _executed_sql_calls(mock_cursor)[0]
+        self.assertIn("SELECT date_key FROM dim_date", executed_sql)
 
-    def test_execute_sql_uses_sibling_cursor_for_audit_insert(self) -> None:
-        """execute_sql logs through a sibling cursor so the caller cursor keeps its result set."""
+    def test_execute_sql_does_not_open_sibling_cursor(self) -> None:
+        """execute_sql does not allocate extra cursors for removed audit logging."""
         mock_conn, mock_cursor = _make_mock_conn()
-        mock_conn.cursor()
-        mock_conn.cursor.reset_mock()
 
-        execute_sql(
-            mock_cursor,
-            "SELECT category_key FROM dim_category",
-            origin="test_select",
-        )
+        execute_sql(mock_cursor, "SELECT category_key FROM dim_category")
 
-        self.assertEqual(mock_conn.cursor.call_count, 1)
+        self.assertEqual(mock_conn.cursor.call_count, 0)
         self.assertEqual(mock_cursor.execute.call_count, 1)
-        audit_calls = _audit_sql_calls(mock_conn)
-        self.assertEqual(len(audit_calls), 1)
 
-    def test_execute_batch_with_audit_logs_one_row_per_page(self) -> None:
-        """execute_batch_with_audit preserves page batching and logs each rendered page."""
+
+class TestLandingPageProjection(unittest.TestCase):
+    """Tests for the landing-page projection refresh helper."""
+
+    def test_refresh_landing_page_projection_executes_refresh_and_commits(self) -> None:
+        """refresh_landing_page_projection truncates and repopulates the projection table, then commits."""
+        mock_conn, mock_cursor = _make_mock_conn()
+
+        refresh_landing_page_projection(mock_conn)
+
+        executed_sql = " ".join(_executed_sql_calls(mock_cursor))
+        self.assertIn(
+            f"TRUNCATE TABLE {LANDING_PAGE_ROW_PROJECTION}",
+            executed_sql,
+        )
+        self.assertIn(
+            f"INSERT INTO {LANDING_PAGE_ROW_PROJECTION}",
+            executed_sql,
+        )
+        self.assertIn(
+            f"ANALYZE {LANDING_PAGE_ROW_PROJECTION}",
+            executed_sql,
+        )
+        mock_conn.commit.assert_called_once()
+
+    def test_execute_batch_rows_preserves_page_boundaries(self) -> None:
+        """execute_batch_rows preserves page batching across multiple pages."""
         mock_conn, mock_cursor = _make_mock_conn()
         rows = [(1, "A"), (2, "B"), (3, "C")]
 
-        execute_batch_with_audit(
+        execute_batch_rows(
             mock_cursor,
             "INSERT INTO demo_table (id, name) VALUES (%s, %s)",
             rows,
-            origin="demo_batch",
             page_size=2,
         )
 
@@ -279,12 +295,7 @@ class TestAuditHelpers(unittest.TestCase):
         self.assertEqual(first_batch_rows, rows[:2])
         self.assertEqual(second_batch_rows, rows[2:])
 
-        audit_calls = _audit_sql_calls(mock_conn)
-        self.assertEqual(len(audit_calls), 2)
-        self.assertEqual(audit_calls[0].args[1][0], "demo_batch")
-        self.assertEqual(audit_calls[0].args[1][1], 2)
-        self.assertIn("INSERT INTO demo_table", audit_calls[0].args[1][2])
-        self.assertEqual(audit_calls[1].args[1][1], 1)
+        self.assertEqual(mock_conn.cursor.call_count, 0)
 
 
 class TestUpsertDimSQL(unittest.TestCase):
@@ -517,8 +528,8 @@ class TestGetDateKeysForDates(unittest.TestCase):
         # The date list must be passed as a query parameter (not interpolated).
         self.assertIn("2026-04-29", params[0])
 
-    def test_preserves_fetchable_rows_after_audited_select(self) -> None:
-        """get_date_keys_for_dates keeps SELECT rows fetchable after audit logging."""
+    def test_preserves_fetchable_rows_after_select(self) -> None:
+        """get_date_keys_for_dates keeps SELECT rows fetchable without extra cursor churn."""
         mock_conn, mock_cursor = _make_mock_conn()
         mock_cursor.fetchall.return_value = [(20260429,)]
 
@@ -526,8 +537,7 @@ class TestGetDateKeysForDates(unittest.TestCase):
 
         self.assertEqual(result, [20260429])
         mock_cursor.fetchall.assert_called_once_with()
-        self.assertEqual(mock_conn.cursor.call_count, 2)
-        self.assertEqual(len(_audit_sql_calls(mock_conn)), 1)
+        self.assertEqual(mock_conn.cursor.call_count, 1)
 
 
 class TestPruneDimDate(unittest.TestCase):
@@ -538,7 +548,7 @@ class TestPruneDimDate(unittest.TestCase):
         mock_conn, mock_cursor = _make_mock_conn()
         mock_cursor.rowcount = 60
         prune_dim_date(mock_conn, [20260427, 20260428, 20260429])
-        executed_sql = _non_audit_sql_calls(mock_cursor)[0]
+        executed_sql = _executed_sql_calls(mock_cursor)[0]
         self.assertIn("DELETE FROM dim_date", executed_sql)
         self.assertIn("NOT IN", executed_sql)
 
@@ -586,7 +596,7 @@ class TestPruneDimCategory(unittest.TestCase):
     def test_prune_removes_unreferenced_rows(self) -> None:
         """prune_dim_category deletes dim_category rows not in fact_prices_lookback."""
         mock_conn, mock_cursor = _make_mock_conn()
-        delete_cursor = mock_conn._cursor_mocks[2]
+        delete_cursor = mock_conn._cursor_mocks[1]
         # The SELECT returns 3 referenced category keys.
         mock_cursor.fetchall.return_value = [(1,), (2,), (3,)]
         # The DELETE removes 2 unreferenced rows.
@@ -594,7 +604,7 @@ class TestPruneDimCategory(unittest.TestCase):
         result = prune_dim_category(mock_conn)
         self.assertEqual(result, 2)
         # Verify a DELETE … NOT IN statement was issued against dim_category.
-        executed_sqls = _non_audit_sql_calls_for_conn(mock_conn)
+        executed_sqls = _executed_sql_calls_for_conn(mock_conn)
         self.assertTrue(
             any("DELETE FROM dim_category" in s for s in executed_sqls),
             "Expected DELETE FROM dim_category in executed SQL",
@@ -630,7 +640,7 @@ class TestPruneDimCategory(unittest.TestCase):
     def test_no_op_when_all_categories_referenced(self) -> None:
         """prune_dim_category returns 0 when all dim_category rows are referenced."""
         mock_conn, mock_cursor = _make_mock_conn()
-        delete_cursor = mock_conn._cursor_mocks[2]
+        delete_cursor = mock_conn._cursor_mocks[1]
         # All existing category keys appear in fact_prices_lookback.
         mock_cursor.fetchall.return_value = [(1,), (2,), (3,)]
         # DELETE matches nothing because all categories are retained.
@@ -638,33 +648,6 @@ class TestPruneDimCategory(unittest.TestCase):
         result = prune_dim_category(mock_conn)
         self.assertEqual(result, 0)
         mock_conn.commit.assert_called_once()
-
-
-class TestPruneSqlAuditLog(unittest.TestCase):
-    """Tests for prune_sql_audit_log(): rolling audit retention cleanup."""
-
-    def test_executes_retention_delete_and_commits(self) -> None:
-        """prune_sql_audit_log deletes old audit rows and commits on success."""
-        mock_conn, mock_cursor = _make_mock_conn()
-        mock_cursor.rowcount = 4
-
-        result = prune_sql_audit_log(mock_conn, retention_days=7)
-
-        self.assertEqual(result, 4)
-        executed_sql = _non_audit_sql_calls(mock_cursor)[0]
-        self.assertIn(f"DELETE FROM {SQL_AUDIT_TABLE}", executed_sql)
-        self.assertIn("INTERVAL '7 days'", executed_sql)
-        mock_conn.commit.assert_called_once()
-
-    def test_rolls_back_on_database_error(self) -> None:
-        """prune_sql_audit_log rolls back and re-raises on a database error."""
-        mock_conn, mock_cursor = _make_mock_conn()
-        mock_cursor.execute.side_effect = FakeDatabaseError("simulated")
-
-        with self.assertRaises(FakeDatabaseError):
-            prune_sql_audit_log(mock_conn)
-
-        mock_conn.rollback.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -8,8 +8,15 @@ Execute active request scope, update the documentation and create request-scoped
 Step 1:  Read `.aib_memory/instructions.md`. If the file exists and is non-empty, treat its content as persistent workspace-level instructions that MUST be observed throughout this prompt's execution. If the file is absent or empty, proceed normally.
 
 Step 2: Read `.aib_memory/requests_register.md` and check for exactly one row with `state = Active`.
-  - If zero Active rows are found: output the message **"ERROR: No active request is found. Execution halted."** and HALT.
+
+  - If zero Active rows are found: 
+      1. output the message **"No active request is found. Auto-Create"**. Execute **Appendix A — Auto-Request Creation Branch**. 
+      2. Generate or recreate `.aib_memory/plan-<request_id>.md` based on `.aib_memory/input.md` and project memory in `.aib_memory/context.md`. Follow strictly the format and structure defined in `.aib_brain/conventions/plan-convention.md`. 
+      3. Output a short step-completion note in format: `Plan document generated or recreated from input file.` 
+      4. Resume at Step 3. 
+  
   - If more than one Active row is found: output the message **"ERROR: Register inconsistency — multiple Active requests found. Execution halted. Fix requests_register.md before running implement."** Do NOT proceed to any subsequent step. Do NOT write any output files.
+
   - If exactly one Active row is found: continue with input resolution below.
 
 Step 3:  Resolve active request from `.aib_memory/requests_register.md` unless explicit ID is provided.
@@ -93,5 +100,21 @@ Step 14. MUST confirm at the very end of the conversation with the text "--- I a
 - Do not create Python virtual environment unless explicitely specified in the request or in plan or in the documentation
 - Do not install any additional libraries or third party software  unless explicitely specified in the request or in plan or in the documentation
 
+---
+
+## Appendix A — Auto-Request Creation Branch
+
+
+**A.1.** Read `.aib_memory/input.md`.
+   - If `## Input` section is empty or contains only whitespace: output the literal message **"ERROR: No active request and input.md is empty. Add content to ## Input before running analysis."** and HALT. Do NOT proceed.
+
+**A.2.** Derive a request title from the `## Input` content (first meaningful sentence or noun phrase, ≤ 60 characters).
+
+**A.3.** Invoke `.aib_brain/tools/create-request.py`:
+   ```
+   python .aib_brain/tools/create-request.py --workspace . --title "<derived-title>"
+   ```
+
+**A.4.** Read `.aib_memory/requests_register.md` to resolve the newly created request folder and `<request_id>`.
 
 

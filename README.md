@@ -208,21 +208,17 @@ python3 src/transform.py  # Transform ZIPs to schema only
 
 ### Inspect session query activity in the React app
 
-After the app loads, open the **🧪 Лог на заявки** page from the main navigation
-to inspect the Supabase requests triggered during the current browser session.
-The page is intended for debugging suspicious visualized data and shows the
-frontend-visible request intent: table or RPC target, selected columns when
-available, filters or parameters, timing, row count, and success/error status.
-It does **not** guarantee the exact backend SQL text executed inside Supabase.
-For repository-owned backend SQL, `src/load_supabase.py` now also writes a
-persistent audit trail to the `backend_sql_audit_log` table in PostgreSQL,
-including the rendered SQL text, execution timestamp, logical origin label,
-and statement count for each emitted statement or batch page. Browser-originated
-Supabase traffic from the React app remains outside that persistent backend log.
-Reports 1, 2, and 3 now read database-aggregated or database-enriched result
-sets via RPC instead of paginating raw `fact_prices_lookback` rows into the
-browser. When those report contracts change locally, rerun
-`python3 src/load_supabase.py` before validating the React app against Supabase.
+The React app records each frontend-visible Supabase request in its in-session
+query log. Use that log while validating landing-page interactions to confirm
+that the browser only requests the active screen data: the initial date list,
+the current flat or grouped result set, and any selector options that the user
+explicitly focuses.
+
+The log shows the RPC target, parameters, timing, row count, and success/error
+status for each request. It does **not** guarantee the exact backend SQL text
+executed inside Supabase. When you change the landing-page RPC contract locally,
+rerun `python3 src/load_supabase.py` before validating the React app against
+Supabase.
 
 ---
 
@@ -280,17 +276,12 @@ first step failure and does not proceed to subsequent steps.
 ### `src/load_supabase.py` — Supabase Sync
 
 Provisions the eight Supabase star-schema tables, the seven PostgreSQL RPC helper
-functions used by the React app, and the persistent `backend_sql_audit_log`
-table (all idempotent via `CREATE TABLE IF NOT EXISTS` / `CREATE OR REPLACE`).
-Upserts all seven dimension CSVs, fully refreshes `fact_prices_lookback`, and
-records the exact rendered SQL text emitted by the repository-owned backend
-path together with execution timestamp, logical origin, and statement count.
-After the lookback sync, it enforces two rolling retention windows: **3 days**
-for retained analytical fact context (`dim_date` + `fact_prices_lookback`
-dependencies) and **30 days** for `backend_sql_audit_log`. The browser Query
-Log page remains a separate frontend-session diagnostic surface and does not
-populate this backend audit table. Reads `DATABASE_URL` from the project-root
-`.env` file. The React app now depends on these RPCs after reprovisioning:
+functions used by the React app (all idempotent via `CREATE TABLE IF NOT EXISTS`
+/ `CREATE OR REPLACE`). Upserts all seven dimension CSVs, fully refreshes
+`fact_prices_lookback`, prunes retained analytical context to the latest
+3 local fact dates, and rebuilds the landing-page projection table. Reads
+`DATABASE_URL` from the project-root `.env` file. The React app now depends on
+these RPCs after reprovisioning:
 `get_available_dates`, `get_settlements_for_date`, `get_categories_for_settlement`,
 `get_settlements_for_category`, `get_report_1_category_prices`,
 `get_report_2_rows`, and `get_report_3_rows`.

@@ -1,0 +1,15 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "db.sktvrfpaydcguhxybybq.supabase.co",
+            "driver": "PostgreSQL",
+            "name": "kolko_ni_struva",
+            "group": "supabase",
+            "database": "postgres",
+            "username": "postgres",
+            "connectString": "postgresql://postgres.sktvrfpaydcguhxybybq:struva_ni_kolko@aws-1-eu-central-1.pooler.supabase.com:5432/postgres"
+        }
+    ]
+}
