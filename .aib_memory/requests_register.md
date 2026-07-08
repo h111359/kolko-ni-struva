@@ -13,3 +13,4 @@
 | R-20260526-0436 | Investigate landing page statement timeout failure | .aib_memory/requests/R-20260526-0436-investigate-landing-page-statement-timeout-failure | Closed | 2026-05-26 04:36:27 +0300 | 2026-05-26 20:38:11 +0300 |
 | R-20260526-2039 | Remove backend_sql_audit_log table and related functionality | .aib_memory/requests/R-20260526-2039-remove-backend-sql-audit-log-table-and-related-functionality | Closed | 2026-05-26 20:39:30 +0300 | 2026-05-26 20:43:39 +0300 |
 | R-20260526-2224 | Rework frontend data retrieval for screen-scoped queries | .aib_memory/requests/R-20260526-2224-rework-frontend-data-retrieval-for-screen-scoped-queries | Closed | 2026-05-26 22:24:00 +0300 | 2026-05-27 05:47:56 +0300 |
+| R-20260612-0710 | Reduce WAL growth during Supabase load | .aib_memory/requests/R-20260612-0710-reduce-wal-growth-during-supabase-load | Active | 2026-06-12 07:10:00 +0300 |  |

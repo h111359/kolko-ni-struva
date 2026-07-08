@@ -1,12 +1,9 @@
 ## Status
-No active request
-State: idle
+R-20260612-0710 — Reduce WAL growth during Supabase load
+State: analysis_ready
 
 ## Options
 - Minimum questions: 0
 
 ## Input
 
-While load in supabase, a huge WAL is generated which causes the supabase to go in read mode as we use free tier
-
-Make modifications to reduce WAL size
