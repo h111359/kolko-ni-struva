@@ -1,9 +1,15 @@
-## Status
-R-20260612-0710 — Reduce WAL growth during Supabase load
-State: analysis_ready
-
-## Options
-- Minimum questions: 0
+---
+state:
+  request_id: ~
+  title: ~
+  status: idle
+  input_verification_result: null
+  context_verification_result: null
+options:
+  minimum_questions: 5
+  input_verification_enabled: true
+  context_verification_enabled: true
+---
 
 ## Input
 

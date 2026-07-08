@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-close-request.py: Close an active request and reset input.md to the seed template.
+close-request.py: Close the active request and reset input.md YAML header to idle.
 Part of the AIB tool scripts.
-Responsibilities: invoke move-request-artifacts before marking Closed (safety net),
-mark the active request as Closed in requests_register.md,
-auto-close any open iterations, and reset input.md to 'No active request'.
+Responsibilities: invoke move-request-artifacts before resetting (safety net),
+verify the target request is active, reset input.md YAML header to idle state.
 """
 
 from __future__ import annotations
@@ -13,17 +12,13 @@ import importlib.util
 from pathlib import Path
 
 from common import (
-    ACTIVE,
-    CLOSED,
     ValidationError,
     ensure_workspace,
-    format_markdown_table,
-    now_iso,
     parse_args,
-    parse_markdown_table,
+    parse_input_header,
     read_text,
-    requests_register_path,
-    update_requests_register,
+    slugify,
+    write_input_header,
     write_text,
 )
 
@@ -47,57 +42,44 @@ def _load_move_artifacts():
 
 
 def main() -> None:
+    """Entry point: resolve active request from YAML header, run cleanup, reset header to idle."""
     args = parse_args("Close request")
     workspace = Path(args.workspace).resolve()
 
     try:
         ensure_workspace(workspace)
 
-        register = requests_register_path(workspace)
-        if not register.exists():
-            raise ValidationError("Missing requests_register.md; run initialize first")
+        input_path = workspace / ".aib_memory" / "input.md"
+        if not input_path.exists():
+            raise ValidationError("input.md not found; run initialize first")
 
-        header, rows = parse_markdown_table(read_text(register))
-        col = {name: idx for idx, name in enumerate(header)}
+        content = read_text(input_path)
+        header = parse_input_header(content)
+        if header is None:
+            raise ValidationError("input.md does not contain a valid YAML frontmatter header")
 
-        req_id = (args.request_id or "").strip()
-        if req_id:
-            matches = [r for r in rows if r[col["request_id"]] == req_id]
-            if not matches:
-                raise ValidationError(f"Request not found: {req_id}")
-            target = matches[0]
-        else:
-            active = [r for r in rows if r[col["state"]] == ACTIVE]
-            if len(active) == 0:
-                raise ValidationError("No active request found; provide --request-id")
-            if len(active) > 1:
-                raise ValidationError("Multiple active requests found")
-            target = active[0]
+        if header["state"]["status"] == "idle":
+            raise ValidationError("No active request found; nothing to close")
 
-        if target[col["state"]] == CLOSED:
-            raise ValidationError("Request already closed")
+        # If explicit --request-id given, verify it matches the active request.
+        req_id_arg = (args.request_id or "").strip()
+        if req_id_arg and req_id_arg != header["state"]["request_id"]:
+            raise ValidationError(
+                f"Explicit request ID {req_id_arg!r} does not match active request {header['state']['request_id']!r}"
+            )
 
-        folder_rel = target[col["folder"]]
+        active_request_id = header["state"]["request_id"]
+        active_title = header["state"]["title"]
 
-        # Move active-request artifacts from .aib_memory/ root to the request
-        # subfolder before marking Closed. This is a safety-net call; if
-        # aib-implement.md already ran the move, this is a no-op. A move
-        # failure must not block the close operation.
+        # Move active-request artifacts from .aib_memory/ root to the request subfolder.
+        # Safety-net call; if aib-implement.md already ran the move, this is a no-op.
         try:
             move_artifacts = _load_move_artifacts()
             move_artifacts(workspace)
         except Exception as exc:  # noqa: BLE001
             print(f"WARNING: move-request-artifacts encountered an error and was skipped: {exc}")
 
-        target[col["state"]] = CLOSED
-        target[col["closed_at"]] = now_iso()
-
-        update_requests_register(workspace, rows)
-
-        # Safety-net: warn (non-blocking) when attachments/ is non-empty at
-        # close time. Files should have been moved to the request folder during
-        # the analysis archiving step; their presence here indicates a missed
-        # archiving step that the developer should investigate.
+        # Safety-net: warn (non-blocking) when attachments/ is non-empty at close time.
         attachments_dir = workspace / ".aib_memory" / "attachments"
         if attachments_dir.exists() and any(
             f for f in attachments_dir.iterdir() if f.name != ".gitkeep"
@@ -107,22 +89,24 @@ def main() -> None:
                 "Files were not archived — consider running aib-analyze.md before closing."
             )
 
-        # Reset input.md to the seed template so the Status section reads
-        # "No active request" and State: idle after the request is closed. Skip silently if the
-        # file does not exist (e.g. workspace not yet initialized).
-        input_file = workspace / ".aib_memory" / "input.md"
-        if input_file.exists():
-            input_seed = (
-                "## Status\n"
-                "No active request\n"
-                "State: idle\n\n"
-                "## Options\n"
-                "- Minimum questions: 0\n\n"
-                "## Input\n\n"
-            )
-            write_text(input_file, input_seed)
+        # Reset input.md YAML header to idle state, preserving options.
+        idle_header = {
+            "state": {
+                "request_id": "~",
+                "title": "~",
+                "status": "idle",
+                "input_verification_result": None,
+                "context_verification_result": None,
+            },
+            "options": {
+                "minimum_questions": header["options"]["minimum_questions"],
+                "input_verification_enabled": header["options"].get("input_verification_enabled", True),
+                "context_verification_enabled": header["options"].get("context_verification_enabled", True),
+            },
+        }
+        write_text(input_path, write_input_header(content, idle_header))
 
-        print(f"Closed request: {target[col['request_id']]}")
+        print(f"Closed request: {active_request_id}")
 
     except ValidationError as exc:
         print(f"ERROR: {exc}")

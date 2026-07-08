@@ -1,188 +1,120 @@
 # Analysis Document Convention
-
-**Scope:** Normative  
-**Applies to:** All files named `analysis-<request_id>.md` generated under `.aib_memory/` (active phase) and archived to `.aib_memory/requests/<request-folder>/` (archived phase).
+$RID=request_id | $AM=.aib_memory/ | $ARQ=.aib_memory/requests/<request-folder>/ | $AD=analysis doc | $DP=Decision Point
+Scope: Normative | Applies to: analysis-$RID.md in $AM (active) + $ARQ (archived)
 
 ## 1. Purpose
+$AD = reasoning+knowledge-capture artifact only; NOT impl driver.
+Records AI structured thinking: research findings, scope interpretation, domain+technical context, impact awareness, risk identification.
+implement MUST NOT read $AD.
+impl-relevant content (assumptions, plan, testing, doc touchpoints, open questions) -> plan-$RID.md via aib-analyze.md.
+NO: [use $AD as exec spec]
 
-The **Analysis document** is a **reasoning and knowledge-capture artifact** only. It records the AI's structured thinking about the user request - research findings, scope interpretation, domain and technical context, impact awareness, and risk identification.
+## 2. Scope & Normative Lang
+Applies to: analysis-$RID.md only.
+Target: analysis-$RID.md | Location: $AM (active) or $ARQ (archived)
+Out of scope: plan, questionnaire, impl records (own conventions or removed).
+Keywords MUST/MUST NOT/SHALL/SHOULD/MAY per BCP 14 (RFC 2119/8174).
 
-**The analysis document is NOT an implementation driver.**
-
-- `implement` MUST NOT read the analysis document.
-- All implementation-relevant content (assumptions, plan, testing, documentation touchpoints, open questions) is written into `plan-<request_id>.md` by the `aib-analyze.md` prompt.
-- Human stakeholders read the analysis for auditability and context; they do not use it as an execution specification.
-
-***
-
-## 2. Scope & Normative Language
-
-This convention applies only to analysis artifacts for a single request:
-
-*   Target files: `analysis.md`
-*   Location: `.aib_memory/` (active phase) or `.aib_memory/requests/<request-folder>/` (archived phase)
-*   Out of scope: plan, questionnaire, and implementation records (defined by their own conventions or removed)
-
-Normative keywords **MUST**, **MUST NOT**, **SHALL**, **SHOULD**, and **MAY** are interpreted per BCP 14 (RFC 2119 / RFC 8174).
-
-***
-
-## 3. File Naming, Location & Write Behavior (Normative)
-
-*   File name **must** follow the pattern: `analysis-<request_id>.md`
-    where `<request_id>` is the active request ID (e.g. `analysis-R-20260509-2313.md`).
-
-*   **Two-phase placement rule:**
-    1.  **Active phase** — while the request is open, `analysis-<request_id>.md` resides at `.aib_memory/analysis-<request_id>.md` (workspace root of `.aib_memory/`, NOT inside the request subfolder).
-    2.  **Archived phase** — upon successful implementation completion, `analysis-<request_id>.md` is moved by `move-request-artifacts.py` to `.aib_memory/requests/<request-folder>/analysis-<request_id>.md` (ID suffix preserved) before `close-request.py` marks the request Closed.
-
-*   Exactly one analysis file per request **MAY** exist at a time.
-
-*   Re-runs of `aib-analyze.md` **must** fully replace (overwrite) the active copy at `.aib_memory/analysis-<request_id>.md`. Appending to, prepending to, or partially editing the existing file is PROHIBITED. The prior file content is discarded entirely; the output is always written from scratch as a complete, self-contained document.
-
-*   Version metadata (for example: version/author/status headers) **must not** be embedded in the analysis file. Versioning is handled by VCS.
-
-***
+## 3. File Naming, Location & Write Behavior
+Name pattern: analysis-$RID.md (e.g. analysis-R-20260509-2313.md)
+Placement:
+  active: $AM/analysis-$RID.md (root of $AM; NOT inside request subfolder)
+  archived: move-request-artifacts.py moves -> $ARQ/analysis-$RID.md (ID preserved) before close-request.py marks Closed
+Max 1 analysis file per req.
+Re-run aib-analyze.md -> change only the affected lines
+output = complete self-contained doc always.
+NO: [version/author/status headers in file]; versioning via VCS.
 
 ## 4. Mandatory Structure
-
-Each analysis file **must** contain the following sections in the exact order:
-
-1. **Overview** **[REQ]**
-2. **Files Read During This Analysis Run** **[REQ]**
-3. **Input Interpretation** **[REQ]**
-4. **Research Results** **[REQ]**
-5. **Decision Register** **[REQ]**
-
-***
+Sections in exact order:
+1. Overview [REQ]
+2. Input Interpretation [REQ]
+3. Research Results [REQ]
+4. Proposed Solution [REQ]
+5. Context Update Analysis [REQ]
+6. Decision Register [REQ]
 
 ### 4.1 Overview
-
-This section is for human review and auditability only; `implement` MUST NOT read or act on it. Fully replace on every re-run.
-
-**Mandatory content:**
-
+For human review+auditability only; implement MUST NOT read/act on it. Fully replace each re-run.
+Required:
 - Request ID
-
 - Request title
+- ### Background: context explaining why change needed, sourced from developer's ## Input
+- ### Scope: what's included; impacted functional areas, components, domains, docs
+- ### Out of scope: intentionally excluded items
+Rules: each subsection (### Background | ### Scope | ### Out of scope) >= 1 sentence | fully replace on re-run.
 
-- `### Background` — Context explaining why the change is needed, sourced from the developer's `## Input` content.
+### 4.2 Input Interpretation [REQ]
+AI-generated spec-grade interpretation of developer's ## Input. Rewrites intent using correct product terminology (@context.md) + relevant external domain knowledge. Third-person spec prose.
+Primary purpose: authoritative source for Answer Application Sub-flow when creating request-$RID.md on re-run without archived input.md (GC-01 compliance).
+Sub-sections:
+  ### User Original Inputs: original + all subsequent inputs
+  ### AI interpretation: copilot interpretation (updated)
+Rules: present in every run (first+re-run) | faithfully represent dev intent (enrich, not replace) | MUST NOT be empty.
 
-- `### Scope` — Clear definition of what is included in the change, listing impacted functional areas, components, domains, or documents.
+### 4.3 Research Results [REQ]
+Primary AI reasoning artifact. Documents full analytical thinking.
+Required:
+- Workspace pattern-scan: impacted components, cross-ref issues, relevant prior solutions
+- Industry knowledge: best practices+external benchmarking; min 3 findings from established frameworks/OSS communities/industry lit; each with applicability assessment
+- AI Agent critique: bullet-list review of ALL issues in req itself + every file read this run; not limited to current scope; each issue = 1 bullet regardless of scope relation
+  Issue types: [misalignment | inconsistencies | logical errors | redundancies | misplaced content | unclear wording | broken cross-refs | format drift | other quality concerns]
+- Edge Cases: dedicated `### Edge Cases` subsection required; position: after AI Agent critique, before Requirements Gate Evaluation; list all edge cases identified during analysis (first-run vs re-run semantics, empty states, boundary conditions, cross-file invariant violations, migration concerns)
+- Requirements Gate Evaluation: dedicated `### Requirements Gate Evaluation` subsection required as the final subsection of Research Results; evaluate against all items in requirements-analysis-convention.md; render rule: when every category is PASS emit a single summary line `Requirements Gate: 8/8 PASS — all categories satisfied.`; when any category is non-PASS emit the full eight-row Markdown table; if any mandatory item cannot be satisfied by a reasonable documented assumption add a new DP tagged `ask`
+NO: [empty | stub notices only]
+implement MUST NOT read/act on this section.
 
-- `### Out of scope` — Items intentionally excluded from the request.
+### 4.4 Proposed Solution [REQ]
+States the AI's chosen approach in plain English before alternatives are presented. Written for human readers; the planner may also consult it.
+Required subsections in fixed order:
+  ### High-Level Concept: one or two plain-English sentences stating what will change and why this approach was chosen
+  ### Execution Steps: ordered list of implementation tasks; each task uses an `#### Task N: <Name>` header; each action under a task is a single bullet `- <file-or-command>: <description>` targeting exactly one file path or one executable command; cross-file invariants that cannot be expressed as single-target actions are folded as indented sub-notes under the most relevant action bullet; this section is read by aib-analyze.md §S09 when generating the plan.
+When open `ask` Decision Points exist: render best-current-guess content and annotate any field that may change with `> Pending: depends on Decision Point <name>`; fill completely on re-run after all DPs resolved.
+Rules: all three subsections MUST be present even if content is preliminary | MUST NOT be empty | fully regenerated each re-run.
+NO: [implementation code | copy of Decision Register alternatives | raw file diffs]
 
-**Rules:**
+### 4.5 Context Update Analysis
+*Required section to evaluate necessary changes to the project's context.md prior to plan generation.*
 
-- Each sub-section (`### Background`, `### Scope`, `### Out of scope`) MUST contain at least one sentence.
+- **Context Elements to Add:** [Identify new context rules, features, or architectural decisions required by the solution]
+- **Context Elements to Modify/Remove:** [Identify existing context items that need alteration or deletion]
+- **Conflict Resolution & Intent Preservation:** [Explicitly identify conflicts with existing context elements, state the original intent of those elements, and explain how the update resolves the conflict while preserving the original intent]
 
-- On every re-run, fully replace this section.
+### 4.6 Decision Register [REQ]
+Captures pivotal decisions shaping solution. Each entry = $DP.
+$DP state: resolved autonomously by AI | raised as question for user | already resolved by user.
+Required per $DP:
+- Identify specific task/step where decision applies + why alternatives exist
+- Named alternative approaches, each with:
+  - one-sentence description
+  - key trade-offs (benefits + drawbacks)
+  - expected codebase impact
+- Resolution classification:
+  - resolve-autonomously: ONLY when developer's input.md ## Input OR named specific section of workspace convention file explicitly+unambiguously resolves it; rationale MUST quote/cite exact source text+file path
+    NO: [external benchmarking | industry best practices | AI judgment as justification]
+  - ask: Q-block raised for dev input; AI MUST NOT express preference or steer toward any option; present choices neutrally
+  - resolved-by-user: user already decided
+- Resolution outcome: retain only chosen alternative; discard non-chosen from final doc
+Structure:
+  ### Decision Points
+  #### Decision Point: <name> (one per $DP)
+    - Tag
+    - Rationale/Resolution
+[no $DPs identified] -> single entry documenting that fact.
+Rules: >= 1 alternative per $DP | [doubt resolve-autonomously vs ask] -> always ask | resolve-autonomously MUST cite concrete source (exact text+file path) | update resolution after human answer | MUST NOT be empty | fully replaced each re-run.
 
-***
+## 5. Formatting
+- Headings: ## or ### consistent with this convention
+- Bullets: -
+- [2+ discrete items] -> list; unordered when order !matter; ordered when order matters
+- Parallel phrasing + consistent punctuation; items concise
+- [enumerated parts in single item] -> sublist
+- Tables: standard GitHub Markdown syntax
+NO: [HTML | non-deterministic output]
+Doc must be deterministic (same inputs -> same output intent).
+Separate chapters+bullets with empty lines for readability.
 
-### 4.2 Files Read During This Analysis Run **[REQ]**
-
-List every workspace file read during this analysis run.
-
-- Each entry MUST be a workspace-relative file path.
-
-- Include all files read for preflight, convention loading, and analysis drafting.
-
-- This section MUST NOT be empty.
-
-***
-
-### 4.3 Input Interpretation **[REQ]**
-
-This section contains an AI-generated, specification-grade interpretation of the developer's original `## Input` content. It rewrites the developer's intent using correct product terminology (from `context.md`) and relevant external domain knowledge. It is written in third-person specification prose. Its primary purpose is to serve as the authoritative source material for the Answer Application Sub-flow when creating `request-<request_id>.md` on re-run without access to the archived `input.md` (GC-01 compliance).
-
-**Rules:** MUST be present in every analysis run (first pass and re-run). MUST faithfully represent developer intent — enrichment, not replacement. MUST NOT be empty.
-
-***
-
-### 4.4 Research Results **[REQ]**
-
-This section is the primary AI reasoning artifact for the request. It documents the AI's full analytical thinking — workspace findings, relevant industry knowledge, feasibility assessment, and observations.
-
-**Mandatory content:**
-
-- Workspace pattern-scan findings: impacted components, cross-reference issues, relevant prior solutions found in the workspace.
-
-- Industry knowledge: best practices and external benchmarking relevant to the request topic. At minimum 3 findings from established frameworks, open-source communities, or industry literature, each with an applicability assessment.
-
-- AI Agent critique: a bullet-list review of all issues found in the request itself and in every workspace file read during this analysis run. Not limited to the current request scope. Each issue is listed as a bullet regardless of whether it relates to the request. Issue types include: misalignment, inconsistencies, logical errors, redundancies, misplaced content, unclear wording, broken cross-references, format drift, and other quality concerns.
-
-**Rules:**
-
-- MUST NOT be empty or contain only stub notices.
-
-- `implement` MUST NOT read or act on this section.
-
-
-***
-
-### 4.5 Decision Register **[REQ]**
-
-This section captures the pivotal decisions that shape the solution to be implemented. Each entry is called a "Decision Point." A decision point is either resolved autonomously by the AI agent based on collected context, raised as a question for the user, or already resolved by the user.
-
-**Mandatory content:**
-
-For each Decision Point identified in the request scope, define a named decision block containing:
-
-  - Identification of the specific task or step where this decision applies, plus an explanation of why the alternatives exist.
-
-  - Two or more named alternative approaches, each with:
-    - A one-sentence description.
-    - Key trade-offs (benefits and drawbacks).
-    - Expected codebase impact.
-
-  - Resolution classification:
-    - Tag `resolve-autonomously` — ONLY when the developer's own `input.md ## Input` text OR a named, specific section of a workspace convention file explicitly and unambiguously resolves the decision point. The rationale MUST quote or cite the exact source text and file path. External benchmarking, industry best practices, and AI judgment are NOT valid justifications for this tag.
-    - Tag `ask` — a Q-block MUST be raised for developer input. The AI MUST NOT express a preference or steer the developer toward any option. Present choices neutrally.
-    - Tag `resolved-by-user` - for the decision points for which the user has already taken a decision
-
-  - Resolution outcome: After resolution, retain only the chosen alternative. Discard non-chosen alternatives from the final document.
-
-- A `### Decision Points` section using a heading/sub-heading list — one `#### Decision Point: <name>` level-4 heading per decision point, each containing bullet list items for Tag and Rationale/Resolution.
-
-- If no decision points are identified, include a single entry documenting that fact.
-
-**Rules:**
-
-- At least one alternative MUST be documented per decision point.
-
-- When in doubt whether to tag `ask` or `resolve-autonomously`, always tag `ask`.
-
-- `resolve-autonomously` MUST cite a concrete source (exact source text and file path).
-
-- Update resolution after human answer is received.
-
-- MUST NOT be empty.
-
-- Fully replaced on every analysis re-run.
-
-***
-
-## 5. Formatting Requirements
-
-*   All headings must use `##` or `###` consistent with this convention.
-*   Bullet lists must use `- `.
-*   When listing multiple consecutive items, present them as a list rather than a single long sentence: use a bulleted list when order does not matter and an enumerated (numbered) list when order matters. Apply this rule whenever listing two or more discrete items. Ensure list items use parallel phrasing (same grammatical form) and consistent punctuation; keep items concise. If a list item contains enumerated parts, place them in a sublist.
-*   Make a list of sub-bullets if the bullet text is split by symbols like `;`
-*   In case of enumerated parts in a single list item - position them in a sublist
-*   Tables must use standard GitHub Markdown table syntax.
-*   No HTML is allowed.
-*   The document must be deterministic (same inputs -> same output intent).
-*   Separate chapters, bullets with empty lines for readability
-*   
-
-***
-
-## 6. Prohibited Content
-
-*   Secrets, private keys, credentials, tokens, or sensitive PII.
-*   In-file version/author/status metadata headers.
-
-***
+## 6. Prohibited
+NO: [secrets | private keys | credentials | tokens | sensitive PII | in-file version/author/status metadata headers]
 
 

@@ -3,40 +3,100 @@
 initialize.py: Initialize AIB memory structures and default artifacts.
 Part of the AIB core tooling layer.
 Responsibilities: seed .aib_memory/ from .aib_brain/ templates, create required
-directories and files, seed semver marker, run upgrade procedure when --upgrade is given.
+directories and files, create aib-setup.yaml setup file, run upgrade procedure
+when --upgrade is given.
 """
 
 from __future__ import annotations
 
 import shutil
-import sys
 from datetime import datetime
 from pathlib import Path
 
 from common import (
     ValidationError,
+    _INPUT_SEED_TEMPLATE,
     ensure_workspace,
     get_semver,
-    parse_markdown_table,
+    get_setup_option,
+    set_setup_option,
     print_error_and_exit,
     parse_args,
     write_text,
 )
 
 
-# Default `path` values that the legacy `references.md` seeded; rows whose
-# normalised path matches one of these values are NOT reported during the
-# upgrade-time legacy inspection.
-_LEGACY_DEFAULT_REFERENCE_PATHS = frozenset(
-    {".aib_memory/context.md"}
-)
+# Default value written to default_questions_number in a freshly seeded aib-setup.yaml.
+_DEFAULT_QUESTIONS_NUMBER: int = 5
+
+
+def _build_input_seed(minimum_questions: int) -> str:
+    """Return the input.md seed content with *minimum_questions* substituted.
+
+    Replaces the hardcoded fallback value in ``_INPUT_SEED_TEMPLATE`` with the
+    given integer so the seeded file reflects workspace-level configuration.
+
+    Args:
+        minimum_questions: The value to write as minimum_questions in the
+            YAML frontmatter.
+
+    Returns:
+        Full input.md seed content string.
+    """
+    return _INPUT_SEED_TEMPLATE.replace(
+        "  minimum_questions: 5\n",
+        f"  minimum_questions: {minimum_questions}\n",
+    )
+
+
+def _write_setup_file(path: Path, memory_version: str, default_questions_number: int) -> None:
+    """Write a fresh aib-setup.yaml file with the given values.
+
+    Overwrites the file if it already exists.
+
+    Args:
+        path: Target file path.
+        memory_version: Version string to store as memory_version.
+        default_questions_number: Value to store as default_questions_number.
+    """
+    content = (
+        f"memory_version: {memory_version}\n"
+        f"default_questions_number: {default_questions_number}\n"
+        f"memory_version_compatibility: compatible\n"
+    )
+    write_text(path, content)
+
+
+def _update_memory_version_in_setup(setup_path: Path, brain_semver: str) -> None:
+    """Overwrite only the memory_version key in an existing aib-setup.yaml.
+
+    Preserves all other key-value pairs.  Appends memory_version as a new line
+    when it is absent from the file.
+
+    Args:
+        setup_path: Path to the existing aib-setup.yaml file.
+        brain_semver: The new version string to set as memory_version.
+    """
+    content = setup_path.read_text(encoding="utf-8")
+    updated_lines = []
+    found = False
+    for line in content.splitlines(keepends=True):
+        if line.startswith("memory_version:"):
+            updated_lines.append(f"memory_version: {brain_semver}\n")
+            found = True
+        else:
+            updated_lines.append(line)
+    if not found:
+        updated_lines.append(f"memory_version: {brain_semver}\n")
+    write_text(setup_path, "".join(updated_lines))
 
 
 def _seed_memory(workspace: Path, brain_dir: Path, memory_root: Path, force: bool = False) -> None:
     """Seed the standard .aib_memory/ artifacts from .aib_brain/ templates.
 
     Creates required directories and seeds every default file. Existing files
-    are skipped on idempotent re-runs.
+    are skipped on idempotent re-runs.  Reads default_questions_number from
+    aib-setup.yaml when available to configure the seeded input.md.
 
     Args:
         workspace: Resolved workspace root path.
@@ -45,7 +105,6 @@ def _seed_memory(workspace: Path, brain_dir: Path, memory_root: Path, force: boo
         force: Reserved for future per-file overwrite behaviour.
     """
     (memory_root / "requests").mkdir(parents=True, exist_ok=True)
-    (memory_root / "logs").mkdir(parents=True, exist_ok=True)
 
     # Create the attachments staging folder used by aib-analyze.md as an
     # enriched input channel. A .gitkeep placeholder ensures the empty directory
@@ -57,17 +116,6 @@ def _seed_memory(workspace: Path, brain_dir: Path, memory_root: Path, force: boo
         gitkeep.touch()
         print("Created attachments directory.")
 
-    register_file = memory_root / "requests_register.md"
-    if register_file.exists():
-        print("requests_register.md already exists — skipping overwrite.")
-    else:
-        requests_register = (
-            "# Requests Register\n\n"
-            "| request_id | title | folder | state | created_at | closed_at |\n"
-            "| --- | --- | --- | --- | --- | --- |\n"
-        )
-        write_text(register_file, requests_register)
-
     context_file = memory_root / "context.md"
     if context_file.exists():
         print("context.md already exists — skipping overwrite.")
@@ -78,15 +126,14 @@ def _seed_memory(workspace: Path, brain_dir: Path, memory_root: Path, force: boo
     if input_file.exists():
         print("input.md already exists — skipping overwrite.")
     else:
-        input_seed = (
-            "## Status\n"
-            "No active request\n"
-            "State: idle\n\n"
-            "## Options\n"
-            "- Minimum questions: 0\n\n"
-            "## Input\n\n"
-        )
-        write_text(input_file, input_seed)
+        # Read default_questions_number from aib-setup.yaml when available so the
+        # seeded input.md reflects workspace-level configuration.
+        default_q = get_setup_option(memory_root, "default_questions_number")
+        try:
+            minimum_questions = int(default_q) if default_q is not None else _DEFAULT_QUESTIONS_NUMBER
+        except ValueError:
+            minimum_questions = _DEFAULT_QUESTIONS_NUMBER
+        write_text(input_file, _build_input_seed(minimum_questions))
 
     # Seed instructions.md as the workspace-level persistent instructions file.
     # Idempotent: does not overwrite a file that already exists.
@@ -97,122 +144,161 @@ def _seed_memory(workspace: Path, brain_dir: Path, memory_root: Path, force: boo
         write_text(instructions_file, "")
 
 
-def _seed_semver(brain_dir: Path, memory_root: Path, force: bool = False) -> str | None:
-    """Seed a semver marker file in *memory_root* matching the brain version.
+def _seed_setup(brain_dir: Path, memory_root: Path, force: bool = False) -> "str | None":
+    """Seed aib-setup.yaml in *memory_root* with brain version and default settings.
 
-    Skips seeding when the marker already exists, unless *force* is True.
-    Prints a warning and returns None when no brain semver can be found.
+    Skips seeding when the file already exists and force is False (idempotency).
+    Removes any stale ``v*.*.*`` empty marker files from *memory_root* as part of
+    legacy workspace cleanup.
 
     Args:
         brain_dir: Path to the .aib_brain/ directory.
         memory_root: Path to the .aib_memory/ directory.
-        force: When True, overwrite an existing semver marker.
+        force: When True, overwrite any existing aib-setup.yaml.
 
     Returns:
-        The seeded semver string (e.g. ``"v1.2.8"``), or None when skipped.
+        The brain semver string (e.g. ``"v1.2.8"``), or ``None`` when no brain
+        semver marker was found.
     """
     brain_semver = get_semver(brain_dir)
     if not brain_semver:
-        print("WARNING: No semver marker found in .aib_brain/ — skipping semver seeding.")
+        print("WARNING: No semver marker found in .aib_brain/ — skipping setup file seeding.")
         return None
 
-    semver_file = memory_root / brain_semver
-    if semver_file.exists() and not force:
-        print(f"{brain_semver} already exists in .aib_memory/ — skipping overwrite.")
+    # Remove any stale empty version marker files left from older workspaces.
+    for old_marker in memory_root.glob("v[0-9]*.[0-9]*.[0-9]*"):
+        if old_marker.is_file():
+            old_marker.unlink()
+
+    setup_file = memory_root / "aib-setup.yaml"
+    if setup_file.exists() and not force:
+        print("aib-setup.yaml already exists in .aib_memory/ — skipping overwrite.")
         return brain_semver
 
-    # Remove any stale semver files before writing the new one.
-    for old in memory_root.glob("v[0-9]*.[0-9]*.[0-9]*"):
-        if old.is_file():
-            old.unlink()
-
-    semver_file.touch()
+    _write_setup_file(setup_file, brain_semver, _DEFAULT_QUESTIONS_NUMBER)
     return brain_semver
 
 
-def _prompt_migrate_requests() -> bool:
-    """Interactively ask whether old requests should be migrated into the new .aib_memory/.
+def _generate_context_placeholder() -> str:
+    """Return a valid minimal context.md string that passes verify-context.py after upgrade.
 
-    When stdin is not a TTY (e.g., during automated testing or CI), the function
-    silently returns True (migrate), preserving backward-compatible behaviour.
+    Generates a placeholder containing all five mandatory sections so that the
+    upgraded workspace starts in a format-compliant state. The developer must
+    replace this placeholder by running ``aib-modify.md`` with the migration
+    instructions pre-loaded in ``input.md``.
 
     Returns:
-        True when old requests should be restored (migrate); False when they
-        should remain in the archive only.
+        A conforming context.md string with title line, all five mandatory
+        sections, and one placeholder bullet or line per section.
     """
-    if not sys.stdin.isatty():
-        # Non-interactive environment: default to migrate for backward compatibility.
-        return True
-    choice = input(
-        "Migrate old requests to new .aib_memory/? "
-        "[Y=migrate / N=archive only] (Y): "
-    ).strip().upper()
-    return choice != "N"
+    return (
+        "# Product Context\n\n"
+        "## Product\n\n"
+        "- Migration in progress — run aib-modify.md with the migration instructions "
+        "in input.md to reconstruct the workspace context.\n\n"
+        "## Concepts\n\n"
+        "- Migration in progress — concepts to be populated after running aib-modify.md "
+        "with migration instructions.\n\n"
+        "## Requirements\n\n"
+        "- MUST: Execute aib-modify.md using the migration instructions in input.md to "
+        "reconstruct the workspace context from archived legacy memory files before normal "
+        "AIB workflows are used.\n\n"
+        "## Solution\n\n"
+        "- Migration in progress — solution statements to be populated after running "
+        "aib-modify.md with migration instructions.\n\n"
+        "## File Structure\n\n"
+        "Migration in progress — file structure to be populated after running aib-modify.md "
+        "with migration instructions.\n"
+    )
 
 
-def _warn_about_legacy_references(legacy_path: Path) -> None:
-    """Inspect a legacy `references.md` from the upgrade archive and warn about
-    rows whose `path` differs from the two known defaults.
+def _generate_migration_input(archive_path: Path, memory_root: Path) -> str:
+    """Generate a complete input.md string with migration instructions in ## Input.
 
-    The warning is informational only. The function never raises: a missing
-    file is silently ignored, and an unparseable file produces a single
-    explicit warning line then returns.
+    Builds on the standard input.md seed template and injects structured migration
+    instructions targeting context.md reconstruction from the archived legacy state.
+    The developer opens this file and runs ``aib-modify.md`` to reconstruct context.md.
 
     Args:
-        legacy_path: Path to the archived legacy `references.md` file.
+        archive_path: Path to the timestamped archive folder containing the full
+            pre-upgrade .aib_memory/ content.
+        memory_root: Path to the new (post-upgrade) .aib_memory/ directory.
+
+    Returns:
+        Full input.md content string with idle YAML header and migration instructions
+        under ## Input structured as Goal / Sources / Reconstruction Targets / Constraints.
     """
-    if not legacy_path.is_file():
-        return
-
+    # Read default_questions_number from the already-seeded aib-setup.yaml.
+    default_q = get_setup_option(memory_root, "default_questions_number")
     try:
-        content = legacy_path.read_text(encoding="utf-8")
-        header, rows = parse_markdown_table(content)
-    except Exception:  # noqa: BLE001 — informational helper, never blocks upgrade
-        print("WARNING: legacy references.md is not parseable; skipping migration check.")
-        return
+        minimum_questions = int(default_q) if default_q is not None else _DEFAULT_QUESTIONS_NUMBER
+    except ValueError:
+        minimum_questions = _DEFAULT_QUESTIONS_NUMBER
+    seed = _build_input_seed(minimum_questions)
 
-    if not header or "path" not in header:
-        print("WARNING: legacy references.md is not parseable; skipping migration check.")
-        return
+    # Compute workspace-relative archive path with forward slashes.
+    workspace_root = memory_root.parent
+    relative_archive = archive_path.relative_to(workspace_root).as_posix()
 
-    path_idx = header.index("path")
-    extras: list[str] = []
-    for row in rows:
-        if path_idx >= len(row):
-            continue
-        raw_path = row[path_idx].strip()
-        if not raw_path:
-            continue
-        normalised = raw_path.replace("\\", "/")
-        if normalised in _LEGACY_DEFAULT_REFERENCE_PATHS:
-            continue
-        extras.append(raw_path)
+    # Determine the context.md source note based on presence in archive.
+    if (archive_path / "context.md").is_file():
+        context_source_note = (
+            f"Primary source: `{relative_archive}/context.md` — "
+            "the full legacy context.md archived from the pre-upgrade memory."
+        )
+    else:
+        context_source_note = (
+            f"Primary source: ABSENT — `context.md` was not found in the legacy archive. "
+            "Run `aib-refresh-context.md` instead of `aib-modify.md` to create context.md "
+            "from workspace inspection."
+        )
 
-    if not extras:
-        return
+    migration_body = (
+        "### Goal\n\n"
+        f"Reconstruct the workspace's `.aib_memory/context.md` (and optionally other memory files) "
+        f"from the archived legacy `.aib_memory/` content located at `{relative_archive}/`. "
+        "The current `context.md` is a valid placeholder that must be replaced with the full "
+        "workspace context through semantic reconstruction. Run this as an `aib-modify.md` request.\n\n"
+        "### Sources\n\n"
+        f"- {context_source_note}\n"
+        f"- Optional source: `{relative_archive}/input.md` — archived legacy input.md; "
+        "may provide useful background; skip if absent or structurally incompatible.\n"
+        f"- Optional source: `{relative_archive}/aib-setup.yaml` — archived legacy setup; "
+        "reference only for `default_questions_number` value.\n"
+        "- Conventions to follow: `.aib_brain/conventions/context-convention.md`, "
+        "`.aib_brain/conventions/input-convention.md`, `.aib_brain/conventions/q-block-convention.md`.\n\n"
+        "### Reconstruction Targets\n\n"
+        "- context.md — reconstruct all six sections (Product, Concepts, Requirements, Solution, "
+        "File Structure, and optionally References) from the archived legacy context.md using "
+        "semantic interpretation. Conform to context-convention.md.\n"
+        "- aib-setup.yaml — already seeded correctly by the upgrade script. Verify that "
+        "`memory_version` matches the current brain version and `default_questions_number` "
+        "matches the archived value. Update only if discrepant.\n\n"
+        "### Constraints\n\n"
+        f"- Do NOT restore requests from the archive. Legacy requests are at "
+        f"`{relative_archive}/requests/` for reference only.\n"
+        "- Do NOT overwrite `instructions.md` — it was copied unchanged from the archive.\n"
+        "- If optional source files are absent or structurally incompatible, skip them without failure.\n"
+        f"- Legacy requests were archived and are not restored. Find them at "
+        f"`{relative_archive}/requests/` if needed.\n"
+    )
 
-    print("WARNING: legacy references.md contains entries beyond the two defaults.")
-    print("The following references will NOT be migrated automatically:")
-    for entry in extras:
-        print(f"  - {entry}")
-    print("If you still need them, add them to .aib_memory/instructions.md.")
+    # Append migration instructions to the seed string (seed ends with "## Input\n\n").
+    return seed + migration_body
 
 
 def _run_upgrade(workspace: Path, brain_dir: Path, memory_root: Path) -> None:
     """Execute the full .aib_memory/ upgrade procedure.
 
-    Creates a timestamped archive of the current .aib_memory/ (excluding any
-    existing archives/), deletes the non-archive content, re-seeds from brain
-    templates, and restores the user-curated files from the archive.
-    Prompts interactively whether old requests should be migrated or archived only.
+    Archives the full current .aib_memory/ state (excluding any existing
+    archive/ folder) to a timestamped ``legacy_YYYYMMDD-HHMMSS`` subfolder,
+    seeds a fresh conforming memory structure, copies ``instructions.md``
+    unchanged from the archive, generates a valid placeholder ``context.md``
+    with all five mandatory sections, and generates migration-ready ``input.md``
+    pre-loaded with structured migration instructions.
 
-    When the user chooses to migrate requests (Y), the requests/ directory is
-    MOVED from the archive to active memory — it is NOT retained in the archive.
-    After a successful migration the archive will NOT contain a requests/ subfolder;
-    requests exist in exactly one location (active memory).
-
-    When the user declines migration (N), requests/ remains exclusively in the
-    archive and active memory receives only the freshly-seeded empty stub.
+    Requests are never automatically restored to active memory; they remain
+    exclusively in the timestamped archive for developer reference.
 
     Args:
         workspace: Resolved workspace root path.
@@ -231,12 +317,12 @@ def _run_upgrade(workspace: Path, brain_dir: Path, memory_root: Path) -> None:
 
     # Step 1 — Create timestamped archive directory.
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    archives_dir = memory_root / "archives"
-    archive_path = archives_dir / timestamp
+    archive_dir = memory_root / "archives"
+    archive_path = archive_dir / f"legacy_{timestamp}"
     # Ensure uniqueness when two upgrades happen within the same second.
     counter = 1
     while archive_path.exists():
-        archive_path = archives_dir / f"{timestamp}-{counter}"
+        archive_path = archive_dir / f"legacy_{timestamp}-{counter}"
         counter += 1
     archive_path.mkdir(parents=True, exist_ok=True)
 
@@ -254,11 +340,6 @@ def _run_upgrade(workspace: Path, brain_dir: Path, memory_root: Path) -> None:
 
     print(f"Archive created: {archive_path}")
 
-    # Step 2b — Inspect any legacy references.md captured in the archive and
-    # warn the developer about user-added rows that will not be migrated
-    # automatically. Informational only; never aborts the upgrade.
-    _warn_about_legacy_references(archive_path / "references.md")
-
     # Step 3 — Delete all non-archive content from .aib_memory/.
     for item in memory_root.iterdir():
         if item.name == "archives":
@@ -270,51 +351,37 @@ def _run_upgrade(workspace: Path, brain_dir: Path, memory_root: Path) -> None:
 
     print("Cleared non-archive content from .aib_memory/")
 
-    # Step 4 — Re-seed .aib_memory/ from brain templates.
+    # Step 4 — Seed setup file using merge-restore strategy.
+    # Must run before _seed_memory so input.md seeding can read default_questions_number.
+    # When an archived aib-setup.yaml exists, restore it and update only
+    # memory_version so user-configured values (e.g. default_questions_number) are preserved.
+    archived_setup = archive_path / "aib-setup.yaml"
+    if archived_setup.is_file():
+        shutil.copy2(str(archived_setup), str(memory_root / "aib-setup.yaml"))
+        _update_memory_version_in_setup(memory_root / "aib-setup.yaml", brain_semver)
+    else:
+        # No archived setup file; generate fresh defaults.
+        _seed_setup(brain_dir, memory_root, force=True)
+
+    # Step 5 — Re-seed .aib_memory/ from brain templates.
     _seed_memory(workspace, brain_dir, memory_root, force=False)
 
-    # Step 5 — Seed new semver marker.
-    _seed_semver(brain_dir, memory_root, force=True)
+    # Step 6 — Restore instructions.md from archive (developer directives must not be lost).
+    src_instructions = archive_path / "instructions.md"
+    if src_instructions.exists():
+        shutil.copy2(str(src_instructions), str(memory_root / "instructions.md"))
 
-    # Step 6 — Prompt whether old requests should be migrated or archived only.
-    migrate_requests = _prompt_migrate_requests()
+    # Step 7 — Generate placeholder context.md and migration-ready input.md.
+    write_text(memory_root / "context.md", _generate_context_placeholder())
+    write_text(memory_root / "input.md", _generate_migration_input(archive_path, memory_root))
 
-    # Step 7 — Restore user-curated files from the archive.
-    # context.md and instructions.md are always restored; requests-related
-    # files are restored only when the user chose to migrate old requests.
-    restore_files = ["context.md", "instructions.md"]
-    if migrate_requests:
-        restore_files += ["requests_register.md"]
-    restored: list[str] = []
-    for filename in restore_files:
-        src = archive_path / filename
-        if src.exists():
-            dest = memory_root / filename
-            shutil.copy2(str(src), str(dest))
-            restored.append(filename)
-
-    # Step 8 — Conditionally restore requests/ directory from archive.
-    # When migrating, copy requests/ to active memory then remove it from the
-    # archive so requests exist in exactly one location (active memory only).
-    if migrate_requests:
-        requests_archive = archive_path / "requests"
-        if requests_archive.exists():
-            requests_dest = memory_root / "requests"
-            if requests_dest.exists():
-                shutil.rmtree(requests_dest)
-            shutil.copytree(str(requests_archive), str(requests_dest))
-            # Remove from the archive after a successful copy so requests/ is
-            # never duplicated across active memory and the archive.
-            shutil.rmtree(str(requests_archive))
-            restored.append("requests/ (moved from archive)")
-
-    requests_disposition = "moved to active memory (removed from archive)" if migrate_requests else "archived only"
     print("\nUpgrade summary:")
     print(f"  Brain version   : {brain_semver}")
     print(f"  Archive location: {archive_path}")
-    print(f"  Restored files  : {', '.join(restored) if restored else 'none'}")
-    print(f"  Requests        : {requests_disposition}")
+    print(f"  Restored files  : instructions.md")
+    print(f"  Requests        : archived in {archive_path}")
     print("\n.aib_memory/ upgrade complete.")
+    set_setup_option(memory_root, "memory_version_compatibility", "initialized-not-populated")
 
 
 def main() -> None:
@@ -339,8 +406,9 @@ def main() -> None:
         else:
             # Standard idempotent initialization path.
             memory_root.mkdir(parents=True, exist_ok=True)
+            # Seed the setup file first so _seed_memory can read default_questions_number.
+            _seed_setup(brain_dir, memory_root, force=args.force)
             _seed_memory(workspace, brain_dir, memory_root, force=args.force)
-            _seed_semver(brain_dir, memory_root, force=args.force)
             print("Initialized .aib_memory structure successfully.")
 
     except ValidationError as exc:
